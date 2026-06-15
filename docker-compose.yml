@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: prism-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: prism
+      POSTGRES_PASSWORD: prism
+      POSTGRES_DB: prism
+    ports:
+      - '5432:5432'
+    volumes:
+      - prism-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U prism -d prism']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  prism-db-data:

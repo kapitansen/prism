@@ -1,0 +1,396 @@
+/* Generated from tweakcn themes. Each preset is selected via [data-theme] on <html>.
+   Do not edit by hand — regenerate from the source theme URLs. */
+
+/* Zen Inspired Theme */
+
+:root[data-theme='zen-inspired-theme'] {
+  --background: #e9e4d8;
+  --foreground: #1e1e1e;
+  --card: #f4efe4;
+  --card-foreground: #1e1e1e;
+  --popover: #f4efe4;
+  --popover-foreground: #1e1e1e;
+  --primary: #2e2e2e;
+  --primary-foreground: #e6e4d7;
+  --secondary: #d8d2c4;
+  --secondary-foreground: #2e2e2e;
+  --muted: #cfc8b8;
+  --muted-foreground: #5e5a52;
+  --accent: #e6e4d7;
+  --accent-foreground: #2e2e2e;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #d2cbbb;
+  --input: #d2cbbb;
+  --ring: #2e2e2e;
+  --chart-1: #f26a4b;
+  --chart-2: #1e1e1e;
+  --chart-3: #5e5a52;
+  --chart-4: #a89f8f;
+  --chart-5: #cfc8b8;
+  --sidebar: #e3ddcf;
+  --sidebar-foreground: #1e1e1e;
+  --sidebar-primary: #2e2e2e;
+  --sidebar-primary-foreground: #e6e4d7;
+  --sidebar-accent: #e6e4d7;
+  --sidebar-accent-foreground: #2e2e2e;
+  --sidebar-border: #d2cbbb;
+  --sidebar-ring: #2e2e2e;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.5rem;
+  --shadow-color: #000000;
+  --shadow-opacity: 0.1;
+  --shadow-blur: 10px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 4px;
+  --letter-spacing: 0.01em;
+  --spacing: 0.25rem;
+}
+
+:root[data-theme='zen-inspired-theme'].dark {
+  --background: #141414;
+  --foreground: #e8e3da;
+  --card: #1c1c1c;
+  --card-foreground: #e8e3da;
+  --popover: #1c1c1c;
+  --popover-foreground: #e8e3da;
+  --primary: #d1cfc0;
+  --primary-foreground: #363636;
+  --secondary: #222222;
+  --secondary-foreground: #d1cfc0;
+  --muted: #2a2a2a;
+  --muted-foreground: #8e8a83;
+  --accent: #363636;
+  --accent-foreground: #d1cfc0;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #2c2c2c;
+  --input: #2c2c2c;
+  --ring: #d1cfc0;
+  --chart-1: #f26a4b;
+  --chart-2: #d9cfc2;
+  --chart-3: #8e8a83;
+  --chart-4: #5c5a56;
+  --chart-5: #3b3b3b;
+  --sidebar: #101010;
+  --sidebar-foreground: #e8e3da;
+  --sidebar-primary: #d1cfc0;
+  --sidebar-primary-foreground: #363636;
+  --sidebar-accent: #363636;
+  --sidebar-accent-foreground: #d1cfc0;
+  --sidebar-border: #2c2c2c;
+  --sidebar-ring: #d1cfc0;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.5rem;
+  --shadow-color: #000000;
+  --shadow-opacity: 0.3;
+  --shadow-blur: 15px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 6px;
+  --letter-spacing: 0.01em;
+  --spacing: 0.25rem;
+}
+
+/* Chalk */
+
+:root[data-theme='chalk'] {
+  --background: #f3f7fc;
+  --foreground: #060a12;
+  --card: #f9fcff;
+  --card-foreground: #060a12;
+  --popover: #f9fcff;
+  --popover-foreground: #060a12;
+  --primary: #101723;
+  --primary-foreground: #fafafa;
+  --secondary: #e7edf6;
+  --secondary-foreground: #101723;
+  --muted: #e7edf6;
+  --muted-foreground: #636974;
+  --accent: #e7edf6;
+  --accent-foreground: #101723;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --border: #d8dfe9;
+  --input: #d8dfe9;
+  --ring: #87909d;
+  --chart-1: oklch(0.81 0.1 252);
+  --chart-2: oklch(0.62 0.19 260);
+  --chart-3: oklch(0.55 0.22 263);
+  --chart-4: oklch(0.49 0.22 264);
+  --chart-5: oklch(0.42 0.18 266);
+  --sidebar: #eef2f9;
+  --sidebar-foreground: #060a12;
+  --sidebar-primary: #101723;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #e7edf6;
+  --sidebar-accent-foreground: #101723;
+  --sidebar-border: #d8dfe9;
+  --sidebar-ring: #87909d;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --radius: 0.625rem;
+  --shadow-color: oklch(0 0 0);
+  --shadow-opacity: 0.1;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0;
+  --shadow-offset-y: 1px;
+  --letter-spacing: 0em;
+  --spacing: 0.25rem;
+}
+
+:root[data-theme='chalk'].dark {
+  --background: #141d2b;
+  --foreground: #e5ecf1;
+  --card: #1a2533;
+  --card-foreground: #e5ecf1;
+  --popover: #202c3c;
+  --popover-foreground: #e5ecf1;
+  --primary: #d7dfe5;
+  --primary-foreground: #182230;
+  --secondary: #243040;
+  --secondary-foreground: #e5ecf1;
+  --muted: #232d3c;
+  --muted-foreground: #8794a1;
+  --accent: #2b3a4d;
+  --accent-foreground: #e5ecf1;
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: #2b3646;
+  --input: #273444;
+  --ring: #6e7c8c;
+  --chart-1: oklch(0.81 0.1 252);
+  --chart-2: oklch(0.62 0.19 260);
+  --chart-3: oklch(0.55 0.22 263);
+  --chart-4: oklch(0.49 0.22 264);
+  --chart-5: oklch(0.42 0.18 266);
+  --sidebar: #17212f;
+  --sidebar-foreground: #e5ecf1;
+  --sidebar-primary: #1048e6;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #243040;
+  --sidebar-accent-foreground: #e5ecf1;
+  --sidebar-border: #25303e;
+  --sidebar-ring: #6e7c8c;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --radius: 0.625rem;
+  --shadow-color: oklch(0 0 0);
+  --shadow-opacity: 0.1;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0;
+  --shadow-offset-y: 1px;
+  --letter-spacing: 0em;
+  --spacing: 0.25rem;
+}
+
+/* Meridian */
+
+:root[data-theme='meridian'] {
+  --background: #eef0f3;
+  --foreground: #181b21;
+  --card: #ffffff;
+  --card-foreground: #181b21;
+  --popover: #ffffff;
+  --popover-foreground: #181b21;
+  --primary: #3b608f;
+  --primary-foreground: #ffffff;
+  --secondary: #b8694a;
+  --secondary-foreground: #ffffff;
+  --muted: #e8eaee;
+  --muted-foreground: #5a6072;
+  --accent: #d8e2ee;
+  --accent-foreground: #1f3a5c;
+  --destructive: #b8332e;
+  --destructive-foreground: #ffffff;
+  --border: #c9cfd8;
+  --input: #c9cfd8;
+  --ring: #6b87b0;
+  --chart-1: #3b608f;
+  --chart-2: #b8694a;
+  --chart-3: #5b8caf;
+  --chart-4: #4a7c59;
+  --chart-5: #c9a14a;
+  --sidebar: #e2e5ea;
+  --sidebar-foreground: #181b21;
+  --sidebar-primary: #3b608f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #d8e2ee;
+  --sidebar-accent-foreground: #1f3a5c;
+  --sidebar-border: #d0d4db;
+  --sidebar-ring: #6b87b0;
+  --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --radius: 0.625rem;
+  --shadow-color: #181b21;
+  --shadow-opacity: 0.08;
+  --shadow-blur: 4px;
+  --shadow-spread: -1px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 1px;
+  --letter-spacing: 0em;
+  --spacing: 0.25rem;
+}
+
+:root[data-theme='meridian'].dark {
+  --background: #14171c;
+  --foreground: #e6e9ef;
+  --card: #1c2027;
+  --card-foreground: #e6e9ef;
+  --popover: #232831;
+  --popover-foreground: #e6e9ef;
+  --primary: #6b8db8;
+  --primary-foreground: #0f1216;
+  --secondary: #d18866;
+  --secondary-foreground: #1a0e08;
+  --muted: #232831;
+  --muted-foreground: #9097a6;
+  --accent: #1f2d3d;
+  --accent-foreground: #a8c2dd;
+  --destructive: #d4524c;
+  --destructive-foreground: #160807;
+  --border: #353c48;
+  --input: #353c48;
+  --ring: #88a8c9;
+  --chart-1: #6b8db8;
+  --chart-2: #d18866;
+  --chart-3: #88a8c9;
+  --chart-4: #6b9b78;
+  --chart-5: #dab86a;
+  --sidebar: #0f1216;
+  --sidebar-foreground: #e6e9ef;
+  --sidebar-primary: #6b8db8;
+  --sidebar-primary-foreground: #0f1216;
+  --sidebar-accent: #1f2d3d;
+  --sidebar-accent-foreground: #a8c2dd;
+  --sidebar-border: #232831;
+  --sidebar-ring: #88a8c9;
+  --font-sans: Outfit, sans-serif;
+  --font-serif: Merriweather, serif;
+  --font-mono: Fira Code, monospace;
+  --radius: 0.5rem;
+  --shadow-color: #1a1a1a;
+  --shadow-opacity: 0.1;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 1px;
+  --letter-spacing: 0em;
+  --spacing: 0.25rem;
+}
+
+/* My Openclaw */
+
+:root[data-theme='my-openclaw'] {
+  --background: hsl(220, 10%, 96%);
+  --foreground: hsl(220, 15%, 30%);
+  --card: hsl(220, 10%, 94%);
+  --card-foreground: hsl(220, 15%, 25%);
+  --popover: hsl(220, 10%, 94%);
+  --popover-foreground: hsl(220, 15%, 25%);
+  --primary: hsl(38, 40%, 40%);
+  --primary-foreground: hsl(220, 10%, 98%);
+  --secondary: hsl(215, 20%, 35%);
+  --secondary-foreground: hsl(220, 10%, 95%);
+  --muted: hsl(220, 10%, 90%);
+  --muted-foreground: hsl(220, 10%, 50%);
+  --accent: hsl(38, 30%, 92%);
+  --accent-foreground: hsl(38, 50%, 25%);
+  --destructive: hsl(0, 60%, 45%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(220, 10%, 88%);
+  --input: hsl(220, 10%, 88%);
+  --ring: hsl(38, 40%, 40%);
+  --chart-1: hsl(38, 40%, 40%);
+  --chart-2: hsl(215, 20%, 35%);
+  --chart-3: hsl(220, 10%, 45%);
+  --chart-4: hsl(40, 15%, 60%);
+  --chart-5: hsl(215, 15%, 80%);
+  --sidebar: hsl(220, 15%, 92%);
+  --sidebar-foreground: hsl(220, 20%, 30%);
+  --sidebar-primary: hsl(38, 40%, 40%);
+  --sidebar-primary-foreground: hsl(220, 10%, 98%);
+  --sidebar-accent: hsl(220, 10%, 88%);
+  --sidebar-accent-foreground: hsl(38, 40%, 30%);
+  --sidebar-border: hsl(220, 10%, 86%);
+  --sidebar-ring: hsl(38, 40%, 40%);
+  --font-sans: 'Instrument Sans', 'Inter', sans-serif;
+  --font-serif: 'Charter', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.6rem;
+  --shadow-color: hsl(220, 20%, 10%);
+  --shadow-opacity: 0.04;
+  --shadow-blur: 12px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 4px;
+  --letter-spacing: -0.015em;
+  --spacing: 0.25rem;
+}
+
+:root[data-theme='my-openclaw'].dark {
+  --background: hsl(220, 20%, 4%);
+  --foreground: hsl(40, 10%, 94%);
+  --card: hsl(220, 18%, 8%);
+  --card-foreground: hsl(40, 10%, 96%);
+  --popover: hsl(220, 18%, 8%);
+  --popover-foreground: hsl(40, 10%, 96%);
+  --primary: hsl(38, 45%, 58%);
+  --primary-foreground: hsl(220, 25%, 3%);
+  --secondary: hsl(215, 25%, 22%);
+  --secondary-foreground: hsl(40, 10%, 98%);
+  --muted: hsl(220, 15%, 12%);
+  --muted-foreground: hsl(215, 10%, 60%);
+  --accent: hsl(215, 25%, 15%);
+  --accent-foreground: hsl(38, 45%, 65%);
+  --destructive: hsl(0, 70%, 50%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(220, 15%, 14%);
+  --input: hsl(220, 15%, 14%);
+  --ring: hsl(38, 45%, 58%);
+  --chart-1: hsl(38, 45%, 58%);
+  --chart-2: hsl(215, 25%, 45%);
+  --chart-3: hsl(215, 10%, 30%);
+  --chart-4: hsl(38, 20%, 40%);
+  --chart-5: hsl(215, 25%, 20%);
+  --sidebar: hsl(220, 25%, 3%);
+  --sidebar-foreground: hsl(215, 10%, 75%);
+  --sidebar-primary: hsl(38, 45%, 58%);
+  --sidebar-primary-foreground: hsl(220, 25%, 3%);
+  --sidebar-accent: hsl(220, 15%, 10%);
+  --sidebar-accent-foreground: hsl(38, 45%, 85%);
+  --sidebar-border: hsl(220, 20%, 10%);
+  --sidebar-ring: hsl(38, 45%, 58%);
+  --font-sans: 'Instrument Sans', 'Inter', sans-serif;
+  --font-serif: 'Charter', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 0.6rem;
+  --shadow-color: hsl(0, 0%, 0%);
+  --shadow-opacity: 0.5;
+  --shadow-blur: 28px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 12px;
+  --letter-spacing: -0.025em;
+  --spacing: 0.25rem;
+}

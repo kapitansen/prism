@@ -1,0 +1,10 @@
+**/dist/**
+**/build/**
+**/node_modules/**
+**/coverage/**
+pnpm-lock.yaml
+apps/web/src/components/ui/**
+
+# Vendored tooling / skill content — not our source
+.agents/**
+.claude/**

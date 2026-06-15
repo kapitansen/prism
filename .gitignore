@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# Environment variables (secrets never go in git)
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+
+# Personal, non-committed notes (mentoring rules etc.)
+CLAUDE.local.md
+
+# Russian planning spec — kept local; the public showcase is English docs/README
+spec.md

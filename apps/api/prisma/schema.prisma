@@ -1,0 +1,178 @@
+// Prisma schema. Docs: https://pris.ly/d/prisma-schema
+// Week-1 slice: users, settings, journal (entries/entities), metrics.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Core / tenant ──────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  totpSecretEnc String?  @map("totp_secret_enc")
+  isDemo        Boolean  @default(false) @map("is_demo")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  settings          UserSettings?
+  entries           Entry[]
+  entities          Entity[]
+  metricDefinitions MetricDefinition[]
+  metricValues      MetricValue[]
+
+  @@map("users")
+}
+
+// Interface / account preferences. One row per user (1:1 with User).
+model UserSettings {
+  userId      String   @id @map("user_id") @db.Uuid
+  uiLanguage  String   @default("ru") @map("ui_language")
+  theme       String   @default("system")
+  themePreset String?  @map("theme_preset")
+  timezone    String   @default("UTC")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ── Journal ────────────────────────────────────────────────────
+
+model Entry {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  type         EntryType
+  origin       EntryOrigin
+  titleEnc     String?      @map("title_enc")
+  bodyEnc      String       @map("body_enc")
+  summaryEnc   String?      @map("summary_enc")
+  occurredOn   DateTime     @map("occurred_on") @db.Date
+  occurredTo   DateTime?    @map("occurred_to") @db.Date
+  ingestStatus IngestStatus @default(draft) @map("ingest_status")
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entities     Entity[]
+  metricValues MetricValue[]
+
+  @@index([userId, occurredOn])
+  @@map("entries")
+}
+
+// Light graph: people, projects, habits, events.
+model Entity {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String       @map("user_id") @db.Uuid
+  type            EntityType
+  nameEnc         String       @map("name_enc")
+  aliasesEnc      String?      @map("aliases_enc")
+  descriptionEnc  String?      @map("description_enc")
+  status          EntityStatus @default(active)
+  periodStart     DateTime?    @map("period_start") @db.Date
+  periodEnd       DateTime?    @map("period_end") @db.Date
+  digestEnc       String?      @map("digest_enc")
+  digestUpdatedAt DateTime?    @map("digest_updated_at") @db.Timestamptz
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries Entry[]
+
+  @@index([userId, type])
+  @@map("entities")
+}
+
+// ── Metrics ────────────────────────────────────────────────────
+
+model MetricDefinition {
+  id       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId   String       @map("user_id") @db.Uuid
+  key      String
+  name     String
+  unit     String?
+  scaleMin Int?         @map("scale_min") @db.SmallInt
+  scaleMax Int?         @map("scale_max") @db.SmallInt
+  source   MetricSource
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("metric_definitions")
+}
+
+model MetricValue {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  metricKey  String       @map("metric_key")
+  value      Decimal      @db.Decimal
+  occurredOn DateTime     @map("occurred_on") @db.Date
+  occurredAt DateTime?    @map("occurred_at") @db.Timestamptz
+  source     MetricSource
+  entryId    String?      @map("entry_id") @db.Uuid
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entry Entry? @relation(fields: [entryId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, metricKey, occurredOn, source])
+  @@map("metric_values")
+}
+
+// ── Enums (mapped to snake_case Postgres enum types) ───────────
+
+enum EntryType {
+  daily
+  report
+  note
+
+  @@map("entry_type")
+}
+
+enum EntryOrigin {
+  web
+  telegram
+  mcp_session
+  import
+
+  @@map("entry_origin")
+}
+
+enum IngestStatus {
+  draft
+  pending
+  parsed
+  awaiting_answers
+  confirmed
+  failed
+
+  @@map("ingest_status")
+}
+
+enum EntityType {
+  person
+  project
+  habit
+  event
+
+  @@map("entity_type")
+}
+
+enum EntityStatus {
+  active
+  archived
+
+  @@map("entity_status")
+}
+
+enum MetricSource {
+  manual
+  extracted
+
+  @@map("metric_source")
+}
