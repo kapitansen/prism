@@ -1,0 +1,52 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common'
+
+import { AuthUser } from '../auth/auth-user.interface'
+import { CurrentUser } from '../auth/current-user.decorator'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CreateEntryDto } from './dto/create-entry.dto'
+import { UpdateEntryDto } from './dto/update-entry.dto'
+import { EntriesService } from './entries.service'
+
+@UseGuards(JwtAuthGuard) // every route here requires a valid token
+@Controller('entries')
+export class EntriesController {
+  constructor(private readonly entries: EntriesService) {}
+
+  @Post()
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateEntryDto) {
+    return this.entries.create(user.id, dto)
+  }
+
+  @Get()
+  findAll(@CurrentUser() user: AuthUser) {
+    return this.entries.findAll(user.id)
+  }
+
+  @Get(':id')
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.entries.findOne(user.id, id)
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateEntryDto,
+  ) {
+    return this.entries.update(user.id, id, dto)
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.entries.remove(user.id, id)
+  }
+}
