@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { hash } from '@node-rs/argon2'
 import { PrismaClient } from '@prisma/client'
 

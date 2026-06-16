@@ -23,6 +23,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       'apps/web/src/components/ui/**', // shadcn-generated primitives, kept verbatim
+      'apps/api/prisma/*.js', // stray compiled output (an editor may emit seed.js)
+      'apps/api/prisma/*.d.ts',
     ],
   },
 

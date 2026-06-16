@@ -2,6 +2,9 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2023",
+    // This config is for type-checking + the editor only; the build uses
+    // tsconfig.build.json. noEmit stops a stray seed.js appearing next to seed.ts.
+    "noEmit": true,
     "outDir": "./dist",
     "declaration": true,
     "sourceMap": true,

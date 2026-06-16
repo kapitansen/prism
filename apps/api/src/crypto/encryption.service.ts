@@ -1,6 +1,7 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
+
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 
 const ALGORITHM = 'aes-256-gcm'
 const KEY_VERSION = 'v1' // bumped on key rotation; lets us decrypt old blobs
@@ -38,7 +39,11 @@ export class EncryptionService {
   }
 
   decrypt(blob: string): string {
-    const [version, ivB64, tagB64, dataB64] = blob.split(':')
+    const parts = blob.split(':')
+    if (parts.length !== 4) {
+      throw new Error('Malformed ciphertext: expected v1:iv:tag:data')
+    }
+    const [version, ivB64, tagB64, dataB64] = parts
     if (version !== KEY_VERSION) {
       throw new Error(`Unsupported key version: ${version}`)
     }

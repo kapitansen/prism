@@ -70,7 +70,9 @@ export class EntriesService {
   // Single source of truth for "DTO field → DB column": encrypts text fields,
   // parses dates, and includes only the keys actually provided. Used by both
   // create and update — add a new field here once.
-  private toData(dto: Partial<CreateEntryDto>): Prisma.EntryUpdateManyMutationInput {
+  private toData(
+    dto: Partial<CreateEntryDto>,
+  ): Prisma.EntryUpdateManyMutationInput {
     const data: Prisma.EntryUpdateManyMutationInput = {}
     if (dto.type !== undefined) data.type = dto.type
     if (dto.body !== undefined) data.bodyEnc = this.encryption.encrypt(dto.body)

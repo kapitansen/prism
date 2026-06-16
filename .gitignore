@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+# Stray compiled output next to TS sources (e.g. an editor compiling seed.ts)
+apps/api/prisma/*.js
+apps/api/prisma/*.js.map
+apps/api/prisma/*.d.ts
 
 # Logs
 *.log
