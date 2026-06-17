@@ -26,3 +26,7 @@ CLAUDE.local.md
 
 # Russian planning spec — kept local; the public showcase is English docs/README
 spec.md
+
+# Internal planning / agent guidance — kept local for now; re-add when polished
+CLAUDE.md
+ROADMAP.md
