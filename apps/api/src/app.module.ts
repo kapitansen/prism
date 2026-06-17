@@ -4,7 +4,9 @@ import { ConfigModule } from '@nestjs/config'
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
 import { CryptoModule } from './crypto/crypto.module'
+import { EntitiesModule } from './entities/entities.module'
 import { EntriesModule } from './entries/entries.module'
+import { MetricsModule } from './metrics/metrics.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { SettingsModule } from './settings/settings.module'
 
@@ -16,6 +18,8 @@ import { SettingsModule } from './settings/settings.module'
     PrismaModule,
     AuthModule,
     EntriesModule,
+    EntitiesModule,
+    MetricsModule,
     SettingsModule,
   ],
   controllers: [AppController],

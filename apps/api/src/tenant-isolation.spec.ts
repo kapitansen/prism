@@ -4,10 +4,10 @@ import { hash } from '@node-rs/argon2'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { AppModule } from '../app.module'
-import { PrismaService } from '../prisma/prisma.service'
+import { AppModule } from './app.module'
+import { PrismaService } from './prisma/prisma.service'
 
-describe('Tenant isolation (API) — entries + settings', () => {
+describe('Tenant isolation (API)', () => {
   let app: INestApplication
   let prisma: PrismaService
   let tokenA: string
@@ -43,16 +43,35 @@ describe('Tenant isolation (API) — entries + settings', () => {
     await prisma.user.deleteMany()
 
     const passwordHash = await hash('pw')
-    await prisma.user.create({ data: { email: 'a@test.local', passwordHash } })
-    await prisma.user.create({ data: { email: 'b@test.local', passwordHash } })
+    const a = await prisma.user.create({
+      data: { email: 'a@test.local', passwordHash },
+    })
+    const b = await prisma.user.create({
+      data: { email: 'b@test.local', passwordHash },
+    })
+    // recordValue requires a defined metric — give both users a 'mood' chip.
+    for (const u of [a, b]) {
+      await prisma.metricDefinition.create({
+        data: {
+          userId: u.id,
+          key: 'mood',
+          name: 'Mood',
+          scaleMin: 1,
+          scaleMax: 10,
+          source: 'manual',
+        },
+      })
+    }
 
     tokenA = await login('a@test.local')
     tokenB = await login('b@test.local')
   })
 
   beforeEach(async () => {
-    // Each test starts with no entries (users/tokens stay).
+    // Each test starts with no per-tenant data (users/tokens stay).
     await prisma.entry.deleteMany()
+    await prisma.entity.deleteMany()
+    await prisma.metricValue.deleteMany()
   })
 
   afterAll(async () => {
@@ -75,6 +94,15 @@ describe('Tenant isolation (API) — entries + settings', () => {
       .post('/entries')
       .set('Authorization', `Bearer ${token}`)
       .send({ type: 'daily', body: 'secret', occurredOn: '2026-06-16' })
+      .expect(201)
+    return res.body.id as string
+  }
+
+  async function createEntityAs(token: string): Promise<string> {
+    const res = await http()
+      .post('/entities')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ type: 'person', name: 'Вася' })
       .expect(201)
     return res.body.id as string
   }
@@ -186,6 +214,87 @@ describe('Tenant isolation (API) — entries + settings', () => {
       .patch('/settings')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ theme: 'neon' })
+      .expect(400)
+  })
+
+  it("entities: B cannot read A's entity (404)", async () => {
+    const id = await createEntityAs(tokenA)
+    await http()
+      .get(`/entities/${id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404)
+  })
+
+  it("entities: B does not see A's entities in their list", async () => {
+    await createEntityAs(tokenA)
+    const res = await http()
+      .get('/entities')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200)
+    expect(res.body).toHaveLength(0)
+  })
+
+  it("entities: B cannot delete A's entity, and A still has it", async () => {
+    const id = await createEntityAs(tokenA)
+    await http()
+      .delete(`/entities/${id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404)
+    await http()
+      .get(`/entities/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+  })
+
+  it("entities: B cannot update A's entity; A's name is unchanged", async () => {
+    const id = await createEntityAs(tokenA)
+    await http()
+      .patch(`/entities/${id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ name: 'hacked by B' })
+      .expect(404)
+    const res = await http()
+      .get(`/entities/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(res.body.name).toBe('Вася')
+  })
+
+  it("metrics: A's value is not visible to B", async () => {
+    await http()
+      .put('/metrics/values')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ metricKey: 'mood', value: 8, occurredOn: '2026-06-16' })
+      .expect(200)
+    const a = await http()
+      .get('/metrics/values')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(a.body).toHaveLength(1)
+    const b = await http()
+      .get('/metrics/values')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200)
+    expect(b.body).toHaveLength(0)
+  })
+
+  it('metrics: requires a token (401)', async () => {
+    await http().get('/metrics/values').expect(401)
+  })
+
+  it('metrics: rejects an unknown metric key (400)', async () => {
+    await http()
+      .put('/metrics/values')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ metricKey: 'not-a-metric', value: 5, occurredOn: '2026-06-16' })
+      .expect(400)
+  })
+
+  it('metrics: rejects a value outside the metric scale (400)', async () => {
+    await http()
+      .put('/metrics/values')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ metricKey: 'mood', value: 99, occurredOn: '2026-06-16' })
       .expect(400)
   })
 })

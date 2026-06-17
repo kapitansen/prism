@@ -10,6 +10,40 @@ const USERS = [
   { email: 'demo@prism.local', password: '12345', isDemo: true },
 ]
 
+// Starter metric set: 4 manual day-chips (1–10) + two extracted-from-text.
+const METRICS = [
+  { key: 'mood', name: 'Mood', scaleMin: 1, scaleMax: 10, source: 'manual' },
+  {
+    key: 'sleep_quality',
+    name: 'Sleep quality',
+    scaleMin: 1,
+    scaleMax: 10,
+    source: 'manual',
+  },
+  {
+    key: 'fatigue',
+    name: 'Fatigue',
+    scaleMin: 1,
+    scaleMax: 10,
+    source: 'manual',
+  },
+  {
+    key: 'activity',
+    name: 'Activity',
+    scaleMin: 1,
+    scaleMax: 10,
+    source: 'manual',
+  },
+  { key: 'sleep_hours', name: 'Sleep hours', unit: 'h', source: 'extracted' },
+  {
+    key: 'anxiety',
+    name: 'Anxiety',
+    scaleMin: 1,
+    scaleMax: 10,
+    source: 'extracted',
+  },
+] as const
+
 async function main() {
   for (const u of USERS) {
     const passwordHash = await hash(u.password)
@@ -23,6 +57,15 @@ async function main() {
         settings: { create: {} }, // defaults: ui_language=ru, theme=system, timezone=UTC
       },
     })
+
+    for (const m of METRICS) {
+      await prisma.metricDefinition.upsert({
+        where: { userId_key: { userId: user.id, key: m.key } },
+        update: {},
+        create: { userId: user.id, ...m },
+      })
+    }
+
     console.log(`seeded user ${user.email} (${user.id})`)
   }
 }
