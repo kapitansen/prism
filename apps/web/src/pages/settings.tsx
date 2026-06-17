@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { type Theme, useTheme } from '@/components/theme-provider'
@@ -9,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { themePresets } from '@/config/themes'
+import { settingsKey, updateSettings, type UserSettings } from '@/lib/settings'
 
 // Languages are listed by their own name (endonym), the same in any UI
 // language — so these labels are intentionally not translated.
@@ -20,6 +22,14 @@ const LANGUAGES = [
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme, colorTheme, setColorTheme } = useTheme()
+  const queryClient = useQueryClient()
+
+  // Persist a change to the backend; keep the cache in sync with the response.
+  const save = useMutation({
+    mutationFn: updateSettings,
+    onSuccess: (data) =>
+      queryClient.setQueryData<UserSettings>(settingsKey, data),
+  })
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
@@ -37,7 +47,10 @@ export function SettingsPage() {
         </div>
         <Select
           value={theme}
-          onValueChange={(value) => setTheme(value as Theme)}
+          onValueChange={(value) => {
+            setTheme(value as Theme) // instant
+            save.mutate({ theme: value as UserSettings['theme'] }) // persist
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue />
@@ -55,7 +68,13 @@ export function SettingsPage() {
         <span className="text-sm font-medium">
           {t('settings.colorTheme.label')}
         </span>
-        <Select value={colorTheme} onValueChange={setColorTheme}>
+        <Select
+          value={colorTheme}
+          onValueChange={(value) => {
+            setColorTheme(value)
+            save.mutate({ themePreset: value })
+          }}
+        >
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -78,7 +97,10 @@ export function SettingsPage() {
         </span>
         <Select
           value={i18n.language}
-          onValueChange={(value) => i18n.changeLanguage(value)}
+          onValueChange={(value) => {
+            void i18n.changeLanguage(value)
+            save.mutate({ uiLanguage: value })
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue />
@@ -92,10 +114,6 @@ export function SettingsPage() {
           </SelectContent>
         </Select>
       </section>
-
-      <p className="max-w-md text-xs text-muted-foreground">
-        {t('settings.notSyncedNote')}
-      </p>
     </div>
   )
 }

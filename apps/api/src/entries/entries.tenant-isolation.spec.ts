@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppModule } from '../app.module'
 import { PrismaService } from '../prisma/prisma.service'
 
-describe('Entries — tenant isolation (API)', () => {
+describe('Tenant isolation (API) — entries + settings', () => {
   let app: INestApplication
   let prisma: PrismaService
   let tokenA: string
@@ -157,5 +157,35 @@ describe('Entries — tenant isolation (API)', () => {
       .post('/auth/login')
       .send({ email: 'a@test.local', password: 'wrong' })
       .expect(401)
+  })
+
+  it('settings: requires a token (401)', async () => {
+    await http().get('/settings').expect(401)
+  })
+
+  it("settings: A's change does not affect B", async () => {
+    await http()
+      .patch('/settings')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ theme: 'dark' })
+      .expect(200)
+    const a = await http()
+      .get('/settings')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(a.body.theme).toBe('dark')
+    const b = await http()
+      .get('/settings')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200)
+    expect(b.body.theme).toBe('system') // B keeps their own default
+  })
+
+  it('settings: rejects an invalid value (400)', async () => {
+    await http()
+      .patch('/settings')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ theme: 'neon' })
+      .expect(400)
   })
 })

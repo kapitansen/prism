@@ -1,7 +1,7 @@
-import { Aperture, PanelLeft } from 'lucide-react'
+import { Aperture, LogOut, PanelLeft } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { useTranslation } from 'react-i18next'
-import { NavLink, useLocation } from 'react-router'
+import { NavLink, useLocation, useNavigate } from 'react-router'
 
 import {
   Sidebar,
@@ -17,11 +17,13 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { mainNav, settingsNav } from '@/config/nav'
+import { clearToken } from '@/lib/auth'
 
 export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const { toggleSidebar } = useSidebar()
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -79,6 +81,18 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
                 <settingsNav.icon />
                 <span>{t(settingsNav.labelKey)}</span>
               </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => {
+                clearToken()
+                navigate('/login', { replace: true })
+              }}
+              tooltip={t('nav.logout')}
+            >
+              <LogOut />
+              <span>{t('nav.logout')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

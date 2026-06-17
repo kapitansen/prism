@@ -5,13 +5,22 @@
     "people": "People",
     "cards": "Cards",
     "settings": "Settings",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "logout": "Log out"
   },
   "common": {
     "comingSoon": "Coming soon."
   },
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon."
+  },
+  "login": {
+    "title": "Sign in to Prism",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "error": "Invalid email or password"
   },
   "settings": {
     "theme": {
@@ -27,7 +36,6 @@
     },
     "language": {
       "label": "Interface language"
-    },
-    "notSyncedNote": "For now this only applies for the current session and resets on reload. Persistent storage will arrive with the backend."
+    }
   }
 }

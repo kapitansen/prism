@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module'
 import { CryptoModule } from './crypto/crypto.module'
 import { EntriesModule } from './entries/entries.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { SettingsModule } from './settings/settings.module'
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module'
     PrismaModule,
     AuthModule,
     EntriesModule,
+    SettingsModule,
   ],
   controllers: [AppController],
 })

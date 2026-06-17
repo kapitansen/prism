@@ -10,10 +10,12 @@ import {
 } from '@/components/ui/breadcrumb'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { mainNav, settingsNav } from '@/config/nav'
+import { useSettingsSync } from '@/hooks/use-settings-sync'
 
 export function AppLayout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
+  useSettingsSync() // load + apply saved theme/language once authenticated
   const current = [...mainNav, settingsNav].find(
     (item) => item.path === pathname,
   )
