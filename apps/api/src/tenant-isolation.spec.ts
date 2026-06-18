@@ -57,7 +57,7 @@ describe('Tenant isolation (API)', () => {
           key: 'mood',
           name: 'Mood',
           scaleMin: 1,
-          scaleMax: 10,
+          scaleMax: 5,
           source: 'manual',
         },
       })
@@ -264,7 +264,7 @@ describe('Tenant isolation (API)', () => {
     await http()
       .put('/metrics/values')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ metricKey: 'mood', value: 8, occurredOn: '2026-06-16' })
+      .send({ metricKey: 'mood', value: 4, occurredOn: '2026-06-16' })
       .expect(200)
     const a = await http()
       .get('/metrics/values')

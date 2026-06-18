@@ -12,26 +12,26 @@ const USERS = [
 
 // Starter metric set: 4 manual day-chips (1–10) + two extracted-from-text.
 const METRICS = [
-  { key: 'mood', name: 'Mood', scaleMin: 1, scaleMax: 10, source: 'manual' },
+  { key: 'mood', name: 'Mood', scaleMin: 1, scaleMax: 5, source: 'manual' },
   {
     key: 'sleep_quality',
     name: 'Sleep quality',
     scaleMin: 1,
-    scaleMax: 10,
+    scaleMax: 5,
     source: 'manual',
   },
   {
     key: 'fatigue',
     name: 'Fatigue',
     scaleMin: 1,
-    scaleMax: 10,
+    scaleMax: 5,
     source: 'manual',
   },
   {
     key: 'activity',
     name: 'Activity',
     scaleMin: 1,
-    scaleMax: 10,
+    scaleMax: 5,
     source: 'manual',
   },
   { key: 'sleep_hours', name: 'Sleep hours', unit: 'h', source: 'extracted' },
@@ -39,7 +39,7 @@ const METRICS = [
     key: 'anxiety',
     name: 'Anxiety',
     scaleMin: 1,
-    scaleMax: 10,
+    scaleMax: 5,
     source: 'extracted',
   },
 ] as const
