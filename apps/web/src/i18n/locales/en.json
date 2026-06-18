@@ -12,7 +12,16 @@
     "comingSoon": "Coming soon."
   },
   "today": {
-    "comingSoon": "Your inner-world dashboard — coming soon."
+    "comingSoon": "Your inner-world dashboard — coming soon.",
+    "metricsTitle": "Day metrics",
+    "loading": "Loading…",
+    "error": "Couldn't load",
+    "metric": {
+      "mood": "Mood",
+      "sleep_quality": "Sleep quality",
+      "fatigue": "Fatigue",
+      "activity": "Activity"
+    }
   },
   "journal": {
     "loading": "Loading…",

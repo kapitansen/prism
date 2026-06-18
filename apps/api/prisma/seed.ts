@@ -148,10 +148,11 @@ async function main() {
     })
 
     for (const m of METRICS) {
+      const { key, ...attrs } = m
       await prisma.metricDefinition.upsert({
-        where: { userId_key: { userId: user.id, key: m.key } },
-        update: {},
-        create: { userId: user.id, ...m },
+        where: { userId_key: { userId: user.id, key } },
+        update: attrs, // keep definitions in sync with this file on re-seed
+        create: { userId: user.id, key, ...attrs },
       })
     }
 
