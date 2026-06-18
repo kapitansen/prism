@@ -4,6 +4,7 @@ import { Entity, Prisma } from '@prisma/client'
 import { EncryptionService } from '../crypto/encryption.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateEntityDto } from './dto/create-entity.dto'
+import { ListEntitiesDto } from './dto/list-entities.dto'
 import { UpdateEntityDto } from './dto/update-entity.dto'
 
 @Injectable()
@@ -24,12 +25,14 @@ export class EntitiesService {
     return this.toDetail(entity)
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, { type }: ListEntitiesDto = {}) {
     const entities = await this.prisma.entity.findMany({
-      where: { userId },
+      where: { userId, ...(type ? { type } : {}) },
       orderBy: { createdAt: 'desc' },
     })
-    return entities.map((e) => this.toListItem(e))
+    // Full shape here: the People screen edits name/aliases/description/summary,
+    // so list items carry everything (entity catalogs are small).
+    return entities.map((e) => this.toDetail(e))
   }
 
   async findOne(userId: string, id: string) {
@@ -79,6 +82,11 @@ export class EntitiesService {
         ? this.encryption.encrypt(dto.description)
         : null
     }
+    if (dto.digest !== undefined) {
+      // a manual edit counts as a (re)build of the summary
+      data.digestEnc = dto.digest ? this.encryption.encrypt(dto.digest) : null
+      data.digestUpdatedAt = dto.digest ? new Date() : null
+    }
     if (dto.status !== undefined) data.status = dto.status
     if (dto.periodStart !== undefined) {
       data.periodStart = dto.periodStart ? new Date(dto.periodStart) : null
@@ -105,18 +113,6 @@ export class EntitiesService {
       periodEnd: e.periodEnd,
       digest: e.digestEnc ? this.encryption.decrypt(e.digestEnc) : null,
       digestUpdatedAt: e.digestUpdatedAt,
-      createdAt: e.createdAt,
-    }
-  }
-
-  private toListItem(e: Entity) {
-    return {
-      id: e.id,
-      type: e.type,
-      name: this.encryption.decrypt(e.nameEnc),
-      status: e.status,
-      periodStart: e.periodStart,
-      periodEnd: e.periodEnd,
       createdAt: e.createdAt,
     }
   }

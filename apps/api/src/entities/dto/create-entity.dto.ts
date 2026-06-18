@@ -26,6 +26,11 @@ export class CreateEntityDto {
   @IsString()
   description?: string
 
+  // AI-maintained summary; user-editable so you can correct the AI's conclusions.
+  @IsOptional()
+  @IsString()
+  digest?: string
+
   @IsOptional()
   @IsEnum(EntityStatus)
   status?: EntityStatus

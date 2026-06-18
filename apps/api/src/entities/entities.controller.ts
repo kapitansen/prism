@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common'
 
@@ -14,6 +15,7 @@ import { AuthUser } from '../auth/auth-user.interface'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CreateEntityDto } from './dto/create-entity.dto'
+import { ListEntitiesDto } from './dto/list-entities.dto'
 import { UpdateEntityDto } from './dto/update-entity.dto'
 import { EntitiesService } from './entities.service'
 
@@ -28,8 +30,8 @@ export class EntitiesController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: AuthUser) {
-    return this.entities.findAll(user.id)
+  findAll(@CurrentUser() user: AuthUser, @Query() query: ListEntitiesDto) {
+    return this.entities.findAll(user.id, query)
   }
 
   @Get(':id')

@@ -14,6 +14,25 @@
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon."
   },
+  "journal": {
+    "loading": "Loading…",
+    "error": "Couldn't load entries",
+    "empty": "No entries yet"
+  },
+  "people": {
+    "loading": "Loading…",
+    "error": "Couldn't load",
+    "empty": "No people yet",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "name": "Name",
+    "aliases": "Aliases",
+    "aliasesHint": "comma-separated",
+    "description": "Description",
+    "summary": "Summary",
+    "summaryEmpty": "No summary yet"
+  },
   "login": {
     "title": "Sign in to Prism",
     "email": "Email",

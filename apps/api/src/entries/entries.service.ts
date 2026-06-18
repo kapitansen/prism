@@ -4,6 +4,7 @@ import { Entry, Prisma } from '@prisma/client'
 import { EncryptionService } from '../crypto/encryption.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateEntryDto } from './dto/create-entry.dto'
+import { ListEntriesDto } from './dto/list-entries.dto'
 import { UpdateEntryDto } from './dto/update-entry.dto'
 
 @Injectable()
@@ -26,10 +27,13 @@ export class EntriesService {
     return this.toDetail(entry)
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, { limit = 20, offset = 0 }: ListEntriesDto) {
     const entries = await this.prisma.entry.findMany({
       where: { userId }, // tenant scope — only this user's rows
-      orderBy: { occurredOn: 'desc' },
+      // newest day first; createdAt breaks ties within a day for stable paging
+      orderBy: [{ occurredOn: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      skip: offset,
     })
     return entries.map((e) => this.toListItem(e))
   }
@@ -110,6 +114,10 @@ export class EntriesService {
       type: e.type,
       origin: e.origin,
       title: e.titleEnc ? this.encryption.decrypt(e.titleEnc) : null,
+      // The web feed shows content; the future MCP layer keeps its own
+      // body-less, index-first responses.
+      body: this.encryption.decrypt(e.bodyEnc),
+      summary: e.summaryEnc ? this.encryption.decrypt(e.summaryEnc) : null,
       occurredOn: e.occurredOn,
       occurredTo: e.occurredTo,
       ingestStatus: e.ingestStatus,

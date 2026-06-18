@@ -29,6 +29,10 @@ export class UpdateEntityDto {
   description?: string
 
   @IsOptional()
+  @IsString()
+  digest?: string
+
+  @IsOptional()
   @IsEnum(EntityStatus)
   status?: EntityStatus
 
