@@ -331,4 +331,35 @@ describe('Tenant isolation (API)', () => {
     expect(dropped.body.isFavorite).toBe(false)
     expect(dropped.body.conviction).toBe(0)
   })
+
+  it('entries: filters by day and type', async () => {
+    const post = (type: string, occurredOn: string) =>
+      http()
+        .post('/entries')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send({ type, body: 'x', occurredOn })
+        .expect(201)
+    await post('daily', '2026-06-18')
+    await post('note', '2026-06-18')
+    await post('daily', '2026-06-19')
+
+    const day = await http()
+      .get('/entries?on=2026-06-18')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(day.body).toHaveLength(2)
+
+    const dailyOnDay = await http()
+      .get('/entries?on=2026-06-18&type=daily')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(dailyOnDay.body).toHaveLength(1)
+    expect(dailyOnDay.body[0].type).toBe('daily')
+
+    const emptyDay = await http()
+      .get('/entries?on=2000-01-01')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(emptyDay.body).toHaveLength(0)
+  })
 })

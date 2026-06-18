@@ -14,6 +14,10 @@
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon.",
     "metricsTitle": "Day metrics",
+    "dayTitle": "Day entry",
+    "dayPlaceholder": "What happened today?",
+    "saving": "Saving…",
+    "saved": "Saved",
     "loading": "Loading…",
     "error": "Couldn't load",
     "metric": {

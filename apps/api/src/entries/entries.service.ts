@@ -27,9 +27,16 @@ export class EntriesService {
     return this.toDetail(entry)
   }
 
-  async findAll(userId: string, { limit = 20, offset = 0 }: ListEntriesDto) {
+  async findAll(
+    userId: string,
+    { limit = 20, offset = 0, on, type }: ListEntriesDto,
+  ) {
     const entries = await this.prisma.entry.findMany({
-      where: { userId }, // tenant scope — only this user's rows
+      where: {
+        userId, // tenant scope — only this user's rows
+        ...(type ? { type } : {}),
+        ...(on ? { occurredOn: new Date(on) } : {}),
+      },
       // newest day first; createdAt breaks ties within a day for stable paging
       orderBy: [{ occurredOn: 'desc' }, { createdAt: 'desc' }],
       take: limit,

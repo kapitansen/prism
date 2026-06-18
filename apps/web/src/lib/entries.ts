@@ -14,10 +14,30 @@ export interface EntryListItem {
   createdAt: string
 }
 
-export function fetchEntries(params: { limit: number; offset: number }) {
-  const q = new URLSearchParams({
-    limit: String(params.limit),
-    offset: String(params.offset),
-  })
-  return api.get<EntryListItem[]>(`/entries?${q.toString()}`)
+export function fetchEntries(
+  params: { limit?: number; offset?: number; on?: string; type?: string } = {},
+) {
+  const q = new URLSearchParams()
+  if (params.limit !== undefined) q.set('limit', String(params.limit))
+  if (params.offset !== undefined) q.set('offset', String(params.offset))
+  if (params.on) q.set('on', params.on)
+  if (params.type) q.set('type', params.type)
+  const qs = q.toString()
+  return api.get<EntryListItem[]>(qs ? `/entries?${qs}` : '/entries')
+}
+
+export function createEntry(input: {
+  type: string
+  body: string
+  occurredOn: string
+  title?: string
+}) {
+  return api.post<EntryListItem>('/entries', input)
+}
+
+export function updateEntry(
+  id: string,
+  patch: { body?: string; title?: string },
+) {
+  return api.patch<EntryListItem>(`/entries/${id}`, patch)
 }
