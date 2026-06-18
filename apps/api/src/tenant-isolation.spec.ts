@@ -72,6 +72,7 @@ describe('Tenant isolation (API)', () => {
     await prisma.entry.deleteMany()
     await prisma.entity.deleteMany()
     await prisma.metricValue.deleteMany()
+    await prisma.cbtCard.deleteMany()
   })
 
   afterAll(async () => {
@@ -103,6 +104,15 @@ describe('Tenant isolation (API)', () => {
       .post('/entities')
       .set('Authorization', `Bearer ${token}`)
       .send({ type: 'person', name: 'Вася' })
+      .expect(201)
+    return res.body.id as string
+  }
+
+  async function createCardAs(token: string): Promise<string> {
+    const res = await http()
+      .post('/cbt-cards')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'триггер', explanation: 'основной текст' })
       .expect(201)
     return res.body.id as string
   }
@@ -296,5 +306,29 @@ describe('Tenant isolation (API)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ metricKey: 'mood', value: 99, occurredOn: '2026-06-16' })
       .expect(400)
+  })
+
+  it("cbt: B cannot read A's card (404)", async () => {
+    const id = await createCardAs(tokenA)
+    await http()
+      .get(`/cbt-cards/${id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404)
+  })
+
+  it('cbt: setting conviction to 0 removes the card from the deck', async () => {
+    const id = await createCardAs(tokenA)
+    await http()
+      .patch(`/cbt-cards/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ isFavorite: true })
+      .expect(200)
+    const dropped = await http()
+      .patch(`/cbt-cards/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ conviction: 0 })
+      .expect(200)
+    expect(dropped.body.isFavorite).toBe(false)
+    expect(dropped.body.conviction).toBe(0)
   })
 })

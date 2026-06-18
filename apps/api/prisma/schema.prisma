@@ -23,6 +23,7 @@ model User {
   settings          UserSettings?
   entries           Entry[]
   entities          Entity[]
+  cbtCards          CbtCard[]
   metricDefinitions MetricDefinition[]
   metricValues      MetricValue[]
 
@@ -87,6 +88,24 @@ model Entity {
 
   @@index([userId, type])
   @@map("entities")
+}
+
+// ── CBT cards ──────────────────────────────────────────────────
+
+model CbtCard {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  titleEnc       String   @map("title_enc") // trigger thought / situation
+  explanationEnc String   @map("explanation_enc") // main text (multi-paragraph)
+  isFavorite     Boolean  @default(false) @map("is_favorite") // in the review deck
+  conviction     Int      @default(100) @db.SmallInt // 0–100; reaching 0 leaves the deck
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isFavorite])
+  @@map("cbt_cards")
 }
 
 // ── Metrics ────────────────────────────────────────────────────

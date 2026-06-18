@@ -108,6 +108,31 @@ const DEMO_PROJECTS = [
   { name: 'Книга', description: 'личный писательский проект' },
 ] as const
 
+// CBT cards: trigger thought (title) + reframe (explanation, can be long).
+const DEMO_CARDS = [
+  {
+    title: 'Я не справлюсь с переменами',
+    explanation:
+      'За последние полгода прошёл через переезд, смену работы и кучу бытовых сложностей.\n\nПри этом:\n— разобрался с документами и финансами;\n— завёл новые знакомства на новом месте;\n— наладил режим: спорт, готовка, прогулки;\n— дописал давний проект;\n— прокачал навыки и настроил поиск работы;\n— находил время на хобби и друзей.\n\nВывод: даже когда трудно, я справляюсь и действую по-взрослому.',
+    isFavorite: true,
+    conviction: 80,
+  },
+  {
+    title: 'Мне нужно держать всё под контролем',
+    explanation:
+      'Контроль над всем — иллюзия. Я отвечаю за свои действия и реакции, а не за каждый исход. Когда отпускаю лишнее, остаётся сил на важное.',
+    isFavorite: true,
+    conviction: 60,
+  },
+  {
+    title: 'Если я не продуктивен каждый день — это провал',
+    explanation:
+      'Отдых — часть работы, а не её противоположность. Один спокойный день не перечёркивает прогресс недели.',
+    isFavorite: false,
+    conviction: 40,
+  },
+] as const
+
 async function main() {
   for (const u of USERS) {
     const passwordHash = await hash(u.password)
@@ -180,6 +205,23 @@ async function main() {
             descriptionEnc: pr.description
               ? encryption.encrypt(pr.description)
               : null,
+          },
+        })
+      }
+    }
+
+    if (
+      u.isDemo &&
+      (await prisma.cbtCard.count({ where: { userId: user.id } })) === 0
+    ) {
+      for (const c of DEMO_CARDS) {
+        await prisma.cbtCard.create({
+          data: {
+            userId: user.id,
+            titleEnc: encryption.encrypt(c.title),
+            explanationEnc: encryption.encrypt(c.explanation),
+            isFavorite: c.isFavorite,
+            conviction: c.conviction,
           },
         })
       }
