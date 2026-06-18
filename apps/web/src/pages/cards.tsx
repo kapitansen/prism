@@ -107,15 +107,15 @@ function ReviewMode() {
       </span>
 
       <div className="flex items-stretch gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           aria-label={t('cards.prev')}
           disabled={safeIndex === 0}
           onClick={() => go(-1)}
+          className="flex shrink-0 items-center justify-center rounded-lg px-2 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
-          <ChevronLeft />
-        </Button>
+          <ChevronLeft className="size-10" />
+        </button>
 
         {/* keyed by id → per-card state (revealed, conviction) resets on change */}
         <CardView
@@ -130,15 +130,15 @@ function ReviewMode() {
           }
         />
 
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           aria-label={t('cards.next')}
           disabled={safeIndex === deck.length - 1}
           onClick={() => go(1)}
+          className="flex shrink-0 items-center justify-center rounded-lg px-2 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
-          <ChevronRight />
-        </Button>
+          <ChevronRight className="size-10" />
+        </button>
       </div>
     </div>
   )
