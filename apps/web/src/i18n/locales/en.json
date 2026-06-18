@@ -21,6 +21,8 @@
     "dayPlaceholder": "What happened today?",
     "saving": "Saving…",
     "saved": "Saved",
+    "closeDay": "Close the day",
+    "dayClosed": "Day closed",
     "loading": "Loading…",
     "error": "Couldn't load",
     "metric": {

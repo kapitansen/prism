@@ -5,7 +5,12 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { ChipGroup } from '@/components/ui/chip-group'
-import { createEntry, fetchEntries, updateEntry } from '@/lib/entries'
+import {
+  createEntry,
+  fetchEntries,
+  finalizeEntry,
+  updateEntry,
+} from '@/lib/entries'
 import {
   fetchMetricDefinitions,
   fetchMetricValues,
@@ -157,6 +162,7 @@ export function TodayPage() {
             date={date}
             initialId={dayQuery.data?.id ?? null}
             initialText={dayQuery.data?.body ?? ''}
+            initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
           />
         )}
       </section>
@@ -170,14 +176,19 @@ function DayEditor({
   date,
   initialId,
   initialText,
+  initialStatus,
 }: {
   date: string
   initialId: string | null
   initialText: string
+  initialStatus: string
 }) {
   const { t } = useTranslation()
   const [text, setText] = useState(initialText)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  // Day-level lifecycle (ingest_status). 'draft' = still open for the button.
+  const [dayStatus, setDayStatus] = useState(initialStatus)
+  const closed = dayStatus !== 'draft'
 
   // Refs, not state: the autosave closure must read live values without
   // re-rendering, and we never render these directly.
@@ -223,6 +234,14 @@ function DayEditor({
     timer.current = setTimeout(() => void flush(value), AUTOSAVE_MS)
   }
 
+  async function closeDay() {
+    if (timer.current) clearTimeout(timer.current)
+    await flush(text) // make sure the latest text is saved (and entry created)
+    if (!entryId.current) return
+    const updated = await finalizeEntry(entryId.current)
+    setDayStatus(updated.ingestStatus)
+  }
+
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current)
@@ -247,6 +266,21 @@ function DayEditor({
         rows={6}
         className="focus-visible:ring-ring/50 min-h-32 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
       />
+      <div className="flex justify-end">
+        {closed ? (
+          <span className="text-sm text-muted-foreground">
+            {t('today.dayClosed')}
+          </span>
+        ) : (
+          <Button
+            size="sm"
+            disabled={!text.trim()}
+            onClick={() => void closeDay()}
+          >
+            {t('today.closeDay')}
+          </Button>
+        )}
+      </div>
     </>
   )
 }
