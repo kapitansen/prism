@@ -33,6 +33,28 @@
     "summary": "Summary",
     "summaryEmpty": "No summary yet"
   },
+  "cards": {
+    "review": "Review",
+    "manage": "Manage",
+    "loading": "Loading…",
+    "error": "Couldn't load",
+    "empty": "The deck is empty",
+    "reveal": "Tap to reveal",
+    "conviction": "Conviction",
+    "prev": "Previous",
+    "next": "Next",
+    "add": "Add",
+    "addNew": "New card",
+    "noCards": "No cards yet",
+    "addToDeck": "Add to deck",
+    "removeFromDeck": "Remove from deck",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "title": "Trigger",
+    "explanation": "Main text"
+  },
   "login": {
     "title": "Sign in to Prism",
     "email": "Email",
