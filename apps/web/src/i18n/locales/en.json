@@ -14,6 +14,9 @@
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon.",
     "metricsTitle": "Day metrics",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "jumpToday": "Today",
     "dayTitle": "Day entry",
     "dayPlaceholder": "What happened today?",
     "saving": "Saving…",

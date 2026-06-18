@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Button } from '@/components/ui/button'
 import { ChipGroup } from '@/components/ui/chip-group'
 import { createEntry, fetchEntries, updateEntry } from '@/lib/entries'
 import {
@@ -19,24 +21,35 @@ function todayIso() {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
+// Shift an ISO day by N days using local-calendar math (no timezone drift).
+function shiftIso(iso: string, deltaDays: number) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + deltaDays)
+  const mm = String(dt.getMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getDate()).padStart(2, '0')
+  return `${dt.getFullYear()}-${mm}-${dd}`
+}
+
 export function TodayPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const today = todayIso()
+  const todayStr = todayIso()
+  const [date, setDate] = useState(todayStr)
+  const isToday = date === todayStr
 
   const defsQuery = useQuery({
     queryKey: ['metric-definitions'],
     queryFn: fetchMetricDefinitions,
   })
   const valuesQuery = useQuery({
-    queryKey: ['metric-values', today],
-    queryFn: () => fetchMetricValues({ from: today, to: today }),
+    queryKey: ['metric-values', date],
+    queryFn: () => fetchMetricValues({ from: date, to: date }),
   })
   // The day's draft entry (at most one `daily` per day), or null if not started.
   const dayQuery = useQuery({
-    queryKey: ['day-entry', today],
+    queryKey: ['day-entry', date],
     queryFn: async () => {
-      const list = await fetchEntries({ on: today, type: 'daily', limit: 1 })
+      const list = await fetchEntries({ on: date, type: 'daily', limit: 1 })
       return list[0] ?? null
     },
   })
@@ -44,7 +57,7 @@ export function TodayPage() {
   const record = useMutation({
     mutationFn: recordMetricValue,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['metric-values', today] }),
+      queryClient.invalidateQueries({ queryKey: ['metric-values', date] }),
   })
 
   // Chips only for manual, scaled metrics; extracted ones (sleep_hours,
@@ -65,7 +78,40 @@ export function TodayPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold">{t('nav.today')}</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-2xl font-semibold">{t('nav.today')}</h1>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('today.prevDay')}
+            onClick={() => setDate((d) => shiftIso(d, -1))}
+          >
+            <ChevronLeft />
+          </Button>
+          <input
+            type="date"
+            value={date}
+            max={todayStr}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            className="rounded-md border bg-transparent px-2 py-1 text-sm"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('today.nextDay')}
+            disabled={isToday}
+            onClick={() => setDate((d) => shiftIso(d, 1))}
+          >
+            <ChevronRight />
+          </Button>
+          {!isToday && (
+            <Button variant="ghost" size="sm" onClick={() => setDate(todayStr)}>
+              {t('today.jumpToday')}
+            </Button>
+          )}
+        </div>
+      </div>
 
       <section className="flex flex-col gap-4 rounded-lg border p-4">
         <h2 className="text-sm font-medium">{t('today.metricsTitle')}</h2>
@@ -87,7 +133,7 @@ export function TodayPage() {
               ariaLabel={label(d)}
               value={valueFor(d.key)}
               onChange={(value) =>
-                record.mutate({ metricKey: d.key, value, occurredOn: today })
+                record.mutate({ metricKey: d.key, value, occurredOn: date })
               }
               options={Array.from(
                 { length: d.scaleMax - d.scaleMin + 1 },
@@ -105,10 +151,10 @@ export function TodayPage() {
         {dayQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">{t('today.loading')}</p>
         ) : (
-          // keyed by day → switching the date later remounts with fresh state
+          // keyed by day → switching the date remounts with fresh state
           <DayEditor
-            key={today}
-            today={today}
+            key={date}
+            date={date}
             initialId={dayQuery.data?.id ?? null}
             initialText={dayQuery.data?.body ?? ''}
           />
@@ -121,11 +167,11 @@ export function TodayPage() {
 const AUTOSAVE_MS = 800
 
 function DayEditor({
-  today,
+  date,
   initialId,
   initialText,
 }: {
-  today: string
+  date: string
   initialId: string | null
   initialText: string
 }) {
@@ -157,7 +203,7 @@ function DayEditor({
         const created = await createEntry({
           type: 'daily',
           body: value,
-          occurredOn: today,
+          occurredOn: date,
         })
         entryId.current = created.id
       }
