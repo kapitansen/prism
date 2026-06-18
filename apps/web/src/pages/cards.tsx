@@ -4,8 +4,10 @@ import { type ComponentProps, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { ChipGroup } from '@/components/ui/chip-group'
 import { Input } from '@/components/ui/input'
 import {
+  type CardPatch,
   type CbtCard,
   createCard,
   deleteCard,
@@ -14,6 +16,10 @@ import {
 } from '@/lib/cbt-cards'
 
 type Mode = 'review' | 'manage'
+
+// Conviction is stored 0–100; the deck uses these fixed levels as chips.
+// Tapping 0 drops the card from the deck (backend clears isFavorite).
+const CONVICTION_LEVELS = [0, 25, 50, 75, 100]
 
 export function CardsPage() {
   const { t } = useTranslation()
@@ -63,9 +69,9 @@ function ReviewMode() {
   const safeIndex = deck.length ? Math.min(index, deck.length - 1) : 0
   const card: CbtCard | undefined = deck[safeIndex]
 
-  const save = useMutation({
-    mutationFn: ({ id, conviction }: { id: string; conviction: number }) =>
-      updateCard(id, { conviction }),
+  const update = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: CardPatch }) =>
+      updateCard(id, patch),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cbt-cards'] }),
   })
 
@@ -117,7 +123,10 @@ function ReviewMode() {
           card={card}
           onSwipe={(dir) => go(dir === 'left' ? 1 : -1)}
           onCommitConviction={(value) =>
-            save.mutate({ id: card.id, conviction: value })
+            update.mutate({ id: card.id, patch: { conviction: value } })
+          }
+          onRemoveFromDeck={() =>
+            update.mutate({ id: card.id, patch: { isFavorite: false } })
           }
         />
 
@@ -139,22 +148,36 @@ function CardView({
   card,
   onSwipe,
   onCommitConviction,
+  onRemoveFromDeck,
 }: {
   card: CbtCard
   onSwipe: (dir: 'left' | 'right') => void
   onCommitConviction: (value: number) => void
+  onRemoveFromDeck: () => void
 }) {
   const { t } = useTranslation()
   const [revealed, setRevealed] = useState(false)
   const [conviction, setConviction] = useState(card.conviction)
   const touchX = useRef<number | null>(null)
 
-  function commit() {
-    if (conviction !== card.conviction) onCommitConviction(conviction)
+  function selectConviction(value: number) {
+    setConviction(value)
+    if (value !== card.conviction) onCommitConviction(value)
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-3">
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={onRemoveFromDeck}
+        >
+          <Star className="fill-current" />
+          {t('cards.removeFromDeck')}
+        </Button>
+      </div>
       <button
         type="button"
         onClick={() => setRevealed((r) => !r)}
@@ -186,21 +209,16 @@ function CardView({
         )}
       </button>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs">
-          <span className="font-medium">{t('cards.conviction')}</span>
-          <span className="text-muted-foreground">{conviction}</span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-xs font-medium">{t('cards.conviction')}</span>
+        <ChipGroup
+          ariaLabel={t('cards.conviction')}
           value={conviction}
-          onChange={(e) => setConviction(Number(e.target.value))}
-          onPointerUp={commit}
-          onTouchEnd={commit}
-          onKeyUp={commit}
-          className="w-full"
+          onChange={selectConviction}
+          options={CONVICTION_LEVELS.map((v) => ({
+            value: v,
+            label: String(v),
+          }))}
         />
       </div>
     </div>
