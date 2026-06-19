@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { enUS, ru } from 'date-fns/locale'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -59,6 +60,7 @@ export function TodayPage() {
     month: 'long',
     year: 'numeric',
   })
+  const calendarLocale = i18n.language.startsWith('ru') ? ru : enUS
 
   const defsQuery = useQuery({
     queryKey: ['metric-definitions'],
@@ -122,6 +124,7 @@ export function TodayPage() {
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
+                locale={calendarLocale}
                 selected={isoToDate(date)}
                 defaultMonth={isoToDate(date)}
                 disabled={{ after: isoToDate(todayStr) }}
@@ -268,13 +271,21 @@ function DayEditor({
     timer.current = setTimeout(() => void flush(value), AUTOSAVE_MS)
   }
 
-  async function closeDay() {
+  async function saveNow() {
     if (timer.current) clearTimeout(timer.current)
-    await flush(text) // make sure the latest text is saved (and entry created)
+    await flush(text)
+  }
+
+  async function closeDay() {
+    await saveNow() // make sure the latest text is saved (and entry created)
     if (!entryId.current) return
     const updated = await finalizeEntry(entryId.current)
     setDayStatus(updated.ingestStatus)
   }
+
+  // A day that already existed when we opened it is just being edited → "Save".
+  // A brand-new day is being finished → "Close the day" (finalize).
+  const editingExisting = initialId !== null
 
   useEffect(
     () => () => {
@@ -305,6 +316,14 @@ function DayEditor({
           <span className="text-sm text-muted-foreground">
             {t('today.dayClosed')}
           </span>
+        ) : editingExisting ? (
+          <Button
+            size="sm"
+            disabled={!text.trim()}
+            onClick={() => void saveNow()}
+          >
+            {t('today.save')}
+          </Button>
         ) : (
           <Button
             size="sm"
