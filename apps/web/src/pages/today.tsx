@@ -49,6 +49,23 @@ function shiftIso(iso: string, deltaDays: number) {
   return dateToIso(d)
 }
 
+// Soft red→green ramp for the 1–5 metric chips. Full static class strings so
+// Tailwind keeps them; index 0 = value 1.
+const METRIC_TINT = [
+  'bg-red-100 text-red-700 hover:bg-red-200',
+  'bg-orange-100 text-orange-700 hover:bg-orange-200',
+  'bg-amber-100 text-amber-700 hover:bg-amber-200',
+  'bg-lime-100 text-lime-700 hover:bg-lime-200',
+  'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+]
+const METRIC_TINT_SELECTED = [
+  'bg-red-300 text-red-950',
+  'bg-orange-300 text-orange-950',
+  'bg-amber-300 text-amber-950',
+  'bg-lime-300 text-lime-950',
+  'bg-emerald-400 text-emerald-950',
+]
+
 export function TodayPage() {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
@@ -104,8 +121,6 @@ export function TodayPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold">{t('nav.today')}</h1>
-
       <div className="grid flex-1 gap-4 lg:grid-cols-3">
         {/* Left: AI dashboard (placeholders for now) + the day-input block */}
         <div className="flex flex-col gap-4 lg:col-span-2">
@@ -116,109 +131,125 @@ export function TodayPage() {
             {t('today.coachingPlaceholder')}
           </PlaceholderCard>
 
-          {/* Date selector */}
-          <div className="flex flex-wrap items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('today.prevDay')}
-              onClick={() => setDate((d) => shiftIso(d, -1))}
-            >
-              <ChevronLeft />
-            </Button>
-            <Popover open={calOpen} onOpenChange={setCalOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <CalendarDays className="size-4" />
-                  {dateLabel}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  locale={calendarLocale}
-                  selected={isoToDate(date)}
-                  defaultMonth={isoToDate(date)}
-                  disabled={{ after: isoToDate(todayStr) }}
-                  onSelect={(d) => {
-                    if (d) {
-                      setDate(dateToIso(d))
-                      setCalOpen(false)
-                    }
-                  }}
-                  autoFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t('today.nextDay')}
-              disabled={isToday}
-              onClick={() => setDate((d) => shiftIso(d, 1))}
-            >
-              <ChevronRight />
-            </Button>
-            {!isToday && (
+          {/* Day-input panel — one card, placeholder style */}
+          <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
+            {/* Date selector */}
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={() => setDate(todayStr)}
+                size="icon"
+                aria-label={t('today.prevDay')}
+                onClick={() => setDate((d) => shiftIso(d, -1))}
               >
-                {t('today.jumpToday')}
+                <ChevronLeft />
               </Button>
-            )}
-          </div>
+              <Popover open={calOpen} onOpenChange={setCalOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2 text-base">
+                    <CalendarDays className="size-5" />
+                    {dateLabel}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    locale={calendarLocale}
+                    selected={isoToDate(date)}
+                    defaultMonth={isoToDate(date)}
+                    disabled={{ after: isoToDate(todayStr) }}
+                    onSelect={(d) => {
+                      if (d) {
+                        setDate(dateToIso(d))
+                        setCalOpen(false)
+                      }
+                    }}
+                    autoFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('today.nextDay')}
+                disabled={isToday}
+                onClick={() => setDate((d) => shiftIso(d, 1))}
+              >
+                <ChevronRight />
+              </Button>
+              {!isToday && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDate(todayStr)}
+                >
+                  {t('today.jumpToday')}
+                </Button>
+              )}
+            </div>
 
-          {/* Metric chips — label on top, chips below, wrapping in a row */}
-          {defsQuery.isLoading && (
-            <p className="text-sm text-muted-foreground">
-              {t('today.loading')}
-            </p>
-          )}
-          {defsQuery.isError && (
-            <p className="text-sm text-destructive">{t('today.error')}</p>
-          )}
-          <div className="flex flex-wrap gap-x-8 gap-y-4">
-            {manual.map((d) => (
-              <div key={d.key} className="flex flex-col items-center gap-1.5">
-                <span className="text-sm text-muted-foreground">
-                  {label(d)}
-                </span>
-                <ChipGroup
-                  ariaLabel={label(d)}
-                  value={valueFor(d.key)}
-                  onChange={(value) =>
-                    record.mutate({ metricKey: d.key, value, occurredOn: date })
-                  }
-                  options={Array.from(
-                    { length: d.scaleMax - d.scaleMin + 1 },
-                    (_, i) => ({
-                      value: d.scaleMin + i,
-                      label: String(d.scaleMin + i),
-                    }),
-                  )}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Day entry */}
-          <div className="flex flex-col gap-2">
-            {dayQuery.isLoading ? (
+            {/* Metric chips — label on top, chips below, wrapping in a row */}
+            {defsQuery.isLoading && (
               <p className="text-sm text-muted-foreground">
                 {t('today.loading')}
               </p>
-            ) : (
-              // keyed by day → switching the date remounts with fresh state
-              <DayEditor
-                key={date}
-                date={date}
-                initialId={dayQuery.data?.id ?? null}
-                initialText={dayQuery.data?.body ?? ''}
-                initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
-              />
             )}
+            {defsQuery.isError && (
+              <p className="text-sm text-destructive">{t('today.error')}</p>
+            )}
+            <div className="flex flex-wrap gap-x-8 gap-y-4">
+              {manual.map((d) => {
+                const count = d.scaleMax - d.scaleMin + 1
+                const fiveScale = count === 5
+                return (
+                  <div
+                    key={d.key}
+                    className="flex flex-col items-center gap-1.5"
+                  >
+                    <span className="text-sm text-muted-foreground">
+                      {label(d)}
+                    </span>
+                    <ChipGroup
+                      size="sm"
+                      ariaLabel={label(d)}
+                      value={valueFor(d.key)}
+                      onChange={(value) =>
+                        record.mutate({
+                          metricKey: d.key,
+                          value,
+                          occurredOn: date,
+                        })
+                      }
+                      options={Array.from({ length: count }, (_, i) => ({
+                        value: d.scaleMin + i,
+                        label: String(d.scaleMin + i),
+                        className: fiveScale ? METRIC_TINT[i] : undefined,
+                        selectedClassName: fiveScale
+                          ? METRIC_TINT_SELECTED[i]
+                          : undefined,
+                      }))}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Day entry */}
+            <div className="flex flex-col gap-2">
+              {dayQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">
+                  {t('today.loading')}
+                </p>
+              ) : (
+                // keyed by day → switching the date remounts with fresh state
+                <DayEditor
+                  key={date}
+                  date={date}
+                  initialId={dayQuery.data?.id ?? null}
+                  initialText={dayQuery.data?.body ?? ''}
+                  initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -278,6 +309,8 @@ function DayEditor({
   const inFlight = useRef(false)
   const pending = useRef<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The last persisted text — state (not a ref) so `dirty` recomputes on save.
+  const [lastSaved, setLastSaved] = useState(initialText)
 
   // Serialize saves: create-or-update, and coalesce edits made mid-request so
   // a fast typist can't spawn two `daily` drafts for the same day.
@@ -300,6 +333,7 @@ function DayEditor({
         })
         entryId.current = created.id
       }
+      setLastSaved(value)
       setStatus('saved')
     } finally {
       inFlight.current = false
@@ -328,9 +362,9 @@ function DayEditor({
     setDayStatus(updated.ingestStatus)
   }
 
-  // A day that already existed when we opened it is just being edited → "Save".
-  // A brand-new day is being finished → "Close the day" (finalize).
-  const editingExisting = initialId !== null
+  // "Save" appears whenever there are unsaved edits (works for a closed day
+  // too); otherwise finalize an open day, or show the "closed" label.
+  const dirty = text !== lastSaved
 
   useEffect(
     () => () => {
@@ -357,11 +391,7 @@ function DayEditor({
         className="focus-visible:ring-ring/50 min-h-32 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
       />
       <div className="flex justify-end">
-        {closed ? (
-          <span className="text-sm text-muted-foreground">
-            {t('today.dayClosed')}
-          </span>
-        ) : editingExisting ? (
+        {dirty ? (
           <Button
             size="sm"
             disabled={!text.trim()}
@@ -369,6 +399,10 @@ function DayEditor({
           >
             {t('today.save')}
           </Button>
+        ) : closed ? (
+          <span className="text-sm text-muted-foreground">
+            {t('today.dayClosed')}
+          </span>
         ) : (
           <Button
             size="sm"
