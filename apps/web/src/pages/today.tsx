@@ -1,10 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import { ChipGroup } from '@/components/ui/chip-group'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   createEntry,
   fetchEntries,
@@ -18,29 +24,41 @@ import {
   recordMetricValue,
 } from '@/lib/metrics'
 
-// Local calendar date as YYYY-MM-DD (metric values are keyed by day).
-function todayIso() {
-  const d = new Date()
+// We pass dates around as local YYYY-MM-DD strings (metric values are keyed by
+// day). These convert to/from JS Date for the calendar without timezone drift.
+function dateToIso(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${day}`
 }
 
-// Shift an ISO day by N days using local-calendar math (no timezone drift).
-function shiftIso(iso: string, deltaDays: number) {
+function isoToDate(iso: string) {
   const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(y, m - 1, d + deltaDays)
-  const mm = String(dt.getMonth() + 1).padStart(2, '0')
-  const dd = String(dt.getDate()).padStart(2, '0')
-  return `${dt.getFullYear()}-${mm}-${dd}`
+  return new Date(y, m - 1, d)
+}
+
+function todayIso() {
+  return dateToIso(new Date())
+}
+
+function shiftIso(iso: string, deltaDays: number) {
+  const d = isoToDate(iso)
+  d.setDate(d.getDate() + deltaDays)
+  return dateToIso(d)
 }
 
 export function TodayPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const todayStr = todayIso()
   const [date, setDate] = useState(todayStr)
+  const [calOpen, setCalOpen] = useState(false)
   const isToday = date === todayStr
+  const dateLabel = isoToDate(date).toLocaleDateString(i18n.language, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   const defsQuery = useQuery({
     queryKey: ['metric-definitions'],
@@ -94,13 +112,29 @@ export function TodayPage() {
           >
             <ChevronLeft />
           </Button>
-          <input
-            type="date"
-            value={date}
-            max={todayStr}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="rounded-md border bg-transparent px-2 py-1 text-sm"
-          />
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <CalendarDays className="size-4" />
+                {dateLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={isoToDate(date)}
+                defaultMonth={isoToDate(date)}
+                disabled={{ after: isoToDate(todayStr) }}
+                onSelect={(d) => {
+                  if (d) {
+                    setDate(dateToIso(d))
+                    setCalOpen(false)
+                  }
+                }}
+                autoFocus
+              />
+            </PopoverContent>
+          </Popover>
           <Button
             variant="ghost"
             size="icon"
