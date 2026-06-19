@@ -14,6 +14,9 @@
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon.",
     "metricsTitle": "Day metrics",
+    "chartPlaceholder": "Mood and sleep charts will appear here",
+    "coachingPlaceholder": "Your daily note will appear here",
+    "bulletsPlaceholder": "Highlights and weekly goals will appear here",
     "prevDay": "Previous day",
     "nextDay": "Next day",
     "jumpToday": "Today",

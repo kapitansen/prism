@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { enUS, ru } from 'date-fns/locale'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import {
   type MetricDefinition,
   recordMetricValue,
 } from '@/lib/metrics'
+import { cn } from '@/lib/utils'
 
 // We pass dates around as local YYYY-MM-DD strings (metric values are keyed by
 // day). These convert to/from JS Date for the calendar without timezone drift.
@@ -103,106 +104,150 @@ export function TodayPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold">{t('nav.today')}</h1>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t('today.prevDay')}
-            onClick={() => setDate((d) => shiftIso(d, -1))}
-          >
-            <ChevronLeft />
-          </Button>
-          <Popover open={calOpen} onOpenChange={setCalOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <CalendarDays className="size-4" />
-                {dateLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                locale={calendarLocale}
-                selected={isoToDate(date)}
-                defaultMonth={isoToDate(date)}
-                disabled={{ after: isoToDate(todayStr) }}
-                onSelect={(d) => {
-                  if (d) {
-                    setDate(dateToIso(d))
-                    setCalOpen(false)
-                  }
-                }}
-                autoFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t('today.nextDay')}
-            disabled={isToday}
-            onClick={() => setDate((d) => shiftIso(d, 1))}
-          >
-            <ChevronRight />
-          </Button>
-          {!isToday && (
-            <Button variant="ghost" size="sm" onClick={() => setDate(todayStr)}>
-              {t('today.jumpToday')}
+      <h1 className="text-2xl font-semibold">{t('nav.today')}</h1>
+
+      <div className="grid flex-1 gap-4 lg:grid-cols-3">
+        {/* Left: AI dashboard (placeholders for now) + the day-input block */}
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          <PlaceholderCard className="min-h-40">
+            {t('today.chartPlaceholder')}
+          </PlaceholderCard>
+          <PlaceholderCard className="min-h-44">
+            {t('today.coachingPlaceholder')}
+          </PlaceholderCard>
+
+          {/* Date selector */}
+          <div className="flex flex-wrap items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t('today.prevDay')}
+              onClick={() => setDate((d) => shiftIso(d, -1))}
+            >
+              <ChevronLeft />
             </Button>
-          )}
-        </div>
-      </div>
-
-      <section className="flex flex-col gap-4 rounded-lg border p-4">
-        <h2 className="text-sm font-medium">{t('today.metricsTitle')}</h2>
-
-        {defsQuery.isLoading && (
-          <p className="text-sm text-muted-foreground">{t('today.loading')}</p>
-        )}
-        {defsQuery.isError && (
-          <p className="text-sm text-destructive">{t('today.error')}</p>
-        )}
-
-        {manual.map((d) => (
-          <div
-            key={d.key}
-            className="flex flex-wrap items-center justify-between gap-2"
-          >
-            <span className="text-sm">{label(d)}</span>
-            <ChipGroup
-              ariaLabel={label(d)}
-              value={valueFor(d.key)}
-              onChange={(value) =>
-                record.mutate({ metricKey: d.key, value, occurredOn: date })
-              }
-              options={Array.from(
-                { length: d.scaleMax - d.scaleMin + 1 },
-                (_, i) => ({
-                  value: d.scaleMin + i,
-                  label: String(d.scaleMin + i),
-                }),
-              )}
-            />
+            <Popover open={calOpen} onOpenChange={setCalOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <CalendarDays className="size-4" />
+                  {dateLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  locale={calendarLocale}
+                  selected={isoToDate(date)}
+                  defaultMonth={isoToDate(date)}
+                  disabled={{ after: isoToDate(todayStr) }}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(dateToIso(d))
+                      setCalOpen(false)
+                    }
+                  }}
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t('today.nextDay')}
+              disabled={isToday}
+              onClick={() => setDate((d) => shiftIso(d, 1))}
+            >
+              <ChevronRight />
+            </Button>
+            {!isToday && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDate(todayStr)}
+              >
+                {t('today.jumpToday')}
+              </Button>
+            )}
           </div>
-        ))}
-      </section>
 
-      <section className="flex flex-col gap-2 rounded-lg border p-4">
-        {dayQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t('today.loading')}</p>
-        ) : (
-          // keyed by day → switching the date remounts with fresh state
-          <DayEditor
-            key={date}
-            date={date}
-            initialId={dayQuery.data?.id ?? null}
-            initialText={dayQuery.data?.body ?? ''}
-            initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
-          />
-        )}
-      </section>
+          {/* Metric chips — label on top, chips below, wrapping in a row */}
+          {defsQuery.isLoading && (
+            <p className="text-sm text-muted-foreground">
+              {t('today.loading')}
+            </p>
+          )}
+          {defsQuery.isError && (
+            <p className="text-sm text-destructive">{t('today.error')}</p>
+          )}
+          <div className="flex flex-wrap gap-x-8 gap-y-4">
+            {manual.map((d) => (
+              <div key={d.key} className="flex flex-col items-center gap-1.5">
+                <span className="text-sm text-muted-foreground">
+                  {label(d)}
+                </span>
+                <ChipGroup
+                  ariaLabel={label(d)}
+                  value={valueFor(d.key)}
+                  onChange={(value) =>
+                    record.mutate({ metricKey: d.key, value, occurredOn: date })
+                  }
+                  options={Array.from(
+                    { length: d.scaleMax - d.scaleMin + 1 },
+                    (_, i) => ({
+                      value: d.scaleMin + i,
+                      label: String(d.scaleMin + i),
+                    }),
+                  )}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Day entry */}
+          <div className="flex flex-col gap-2">
+            {dayQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">
+                {t('today.loading')}
+              </p>
+            ) : (
+              // keyed by day → switching the date remounts with fresh state
+              <DayEditor
+                key={date}
+                date={date}
+                initialId={dayQuery.data?.id ?? null}
+                initialText={dayQuery.data?.body ?? ''}
+                initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Right: highlights & weekly goals (AI, placeholder for now) */}
+        <PlaceholderCard className="min-h-96">
+          {t('today.bulletsPlaceholder')}
+        </PlaceholderCard>
+      </div>
+    </div>
+  )
+}
+
+// A soft "coming soon" surface for the AI-generated panels (charts, the daily
+// note, weekly-goal bullets) that the ingestion pipeline will fill in later.
+function PlaceholderCard({
+  className,
+  children,
+}: {
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-center rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm',
+        className,
+      )}
+    >
+      {children}
     </div>
   )
 }
