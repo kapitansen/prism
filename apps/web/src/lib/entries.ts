@@ -46,3 +46,7 @@ export function updateEntry(
 export function finalizeEntry(id: string) {
   return api.post<EntryListItem>(`/entries/${id}/finalize`)
 }
+
+export function deleteEntry(id: string) {
+  return api.delete<{ deleted: true }>(`/entries/${id}`)
+}

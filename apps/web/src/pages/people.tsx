@@ -2,9 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ComponentProps, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { CardActions } from '@/components/card-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { type Entity, fetchPeople, updateEntity } from '@/lib/entities'
+import {
+  deleteEntity,
+  type Entity,
+  fetchPeople,
+  updateEntity,
+} from '@/lib/entities'
 
 const peopleKey = ['entities', 'person'] as const
 
@@ -62,16 +68,19 @@ function PersonCard({ person }: { person: Entity }) {
       setEditing(false)
     },
   })
+  const remove = useMutation({
+    mutationFn: () => deleteEntity(person.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: peopleKey }),
+  })
 
   if (!editing) {
     return (
-      <article className="rounded-lg border p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="font-medium">{person.name}</h2>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            {t('people.edit')}
-          </Button>
-        </div>
+      <article className="group relative rounded-lg border p-4">
+        <CardActions
+          onEdit={() => setEditing(true)}
+          onDelete={() => remove.mutate()}
+        />
+        <h2 className="pr-16 font-medium">{person.name}</h2>
         {person.aliases.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {person.aliases.join(', ')}

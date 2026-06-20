@@ -29,3 +29,7 @@ export interface UpdateEntityInput {
 export function updateEntity(id: string, patch: UpdateEntityInput) {
   return api.patch<Entity>(`/entities/${id}`, patch)
 }
+
+export function deleteEntity(id: string) {
+  return api.delete<{ deleted: true }>(`/entities/${id}`)
+}

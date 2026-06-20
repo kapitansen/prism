@@ -1,9 +1,20 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { CardActions } from '@/components/card-actions'
 import { DayInputPanel } from '@/components/day-input-panel'
-import { type EntryListItem, fetchEntries } from '@/lib/entries'
+import { Button } from '@/components/ui/button'
+import {
+  deleteEntry,
+  type EntryListItem,
+  fetchEntries,
+  updateEntry,
+} from '@/lib/entries'
 
 const PAGE_SIZE = 20
 
@@ -59,14 +70,7 @@ export function JournalPage() {
 
       <div className="flex flex-col gap-3">
         {entries.map((e) => (
-          <article key={e.id} className="rounded-lg border p-4">
-            <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <time dateTime={e.occurredOn}>{formatDate(e.occurredOn)}</time>
-              <span className="rounded bg-muted px-1.5 py-0.5">{e.type}</span>
-            </div>
-            {e.title && <h2 className="font-medium">{e.title}</h2>}
-            <p className="whitespace-pre-wrap text-sm">{e.body}</p>
-          </article>
+          <EntryCard key={e.id} entry={e} />
         ))}
       </div>
 
@@ -78,6 +82,82 @@ export function JournalPage() {
         </p>
       )}
     </div>
+  )
+}
+
+function EntryCard({ entry }: { entry: EntryListItem }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [body, setBody] = useState(entry.body)
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['entries'] })
+    void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
+  }
+  const save = useMutation({
+    mutationFn: () => updateEntry(entry.id, { body }),
+    onSuccess: () => {
+      invalidate()
+      setEditing(false)
+    },
+  })
+  const remove = useMutation({
+    mutationFn: () => deleteEntry(entry.id),
+    onSuccess: invalidate,
+  })
+
+  if (editing) {
+    return (
+      <article className="rounded-lg border p-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            save.mutate()
+          }}
+          className="flex flex-col gap-3"
+        >
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            className="focus-visible:ring-ring/50 min-h-28 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={save.isPending || !body.trim()}
+            >
+              {t('common.save')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditing(false)}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </form>
+      </article>
+    )
+  }
+
+  return (
+    <article className="group relative rounded-lg border p-4">
+      <CardActions
+        onEdit={() => setEditing(true)}
+        onDelete={() => remove.mutate()}
+      />
+      <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+        <time dateTime={entry.occurredOn}>{formatDate(entry.occurredOn)}</time>
+        <span className="rounded bg-muted px-1.5 py-0.5">{entry.type}</span>
+      </div>
+      {entry.title && <h2 className="font-medium">{entry.title}</h2>}
+      <p className="whitespace-pre-wrap text-sm">{entry.body}</p>
+    </article>
   )
 }
 

@@ -9,7 +9,11 @@
     "logout": "Log out"
   },
   "common": {
-    "comingSoon": "Coming soon."
+    "comingSoon": "Coming soon.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon.",

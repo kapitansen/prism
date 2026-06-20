@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { type ComponentProps, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { CardActions } from '@/components/card-actions'
 import { HeaderActions } from '@/components/header-actions'
 import { Button } from '@/components/ui/button'
 import { ChipGroup } from '@/components/ui/chip-group'
@@ -329,39 +330,30 @@ function CardRow({
   }
 
   return (
-    <article className="rounded-lg border p-4">
-      <div className="flex items-start justify-between gap-2">
-        <h2 className="font-medium">{card.title}</h2>
-        <button
-          type="button"
-          aria-label={
-            card.isFavorite ? t('cards.removeFromDeck') : t('cards.addToDeck')
-          }
-          onClick={() => update.mutate({ isFavorite: !card.isFavorite })}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Star
-            className={card.isFavorite ? 'fill-current text-foreground' : ''}
-            size={18}
-          />
-        </button>
-      </div>
+    <article className="group relative rounded-lg border p-4">
+      <CardActions
+        onEdit={() => setEditing(true)}
+        onDelete={() => remove.mutate()}
+        trailing={
+          <button
+            type="button"
+            aria-label={
+              card.isFavorite ? t('cards.removeFromDeck') : t('cards.addToDeck')
+            }
+            onClick={() => update.mutate({ isFavorite: !card.isFavorite })}
+            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <Star
+              className={card.isFavorite ? 'fill-current text-foreground' : ''}
+              size={18}
+            />
+          </button>
+        }
+      />
+      <h2 className="pr-16 font-medium">{card.title}</h2>
       <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">
         {card.explanation}
       </p>
-      <div className="mt-3 flex gap-2">
-        <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-          {t('cards.edit')}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => remove.mutate()}
-          disabled={remove.isPending}
-        >
-          {t('cards.delete')}
-        </Button>
-      </div>
     </article>
   )
 }
