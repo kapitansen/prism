@@ -78,7 +78,9 @@ function PersonCard({ person }: { person: Entity }) {
           </p>
         )}
         {person.description && (
-          <p className="mt-1 text-sm">{person.description}</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">
+            {person.description}
+          </p>
         )}
         <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
           {person.digest || t('people.summaryEmpty')}

@@ -32,7 +32,7 @@ export function AppLayout() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>
+                <BreadcrumbPage className="text-xl font-semibold">
                   {current ? t(current.labelKey) : 'Prism'}
                 </BreadcrumbPage>
               </BreadcrumbItem>

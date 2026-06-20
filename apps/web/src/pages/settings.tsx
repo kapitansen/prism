@@ -24,11 +24,13 @@ const LANGUAGES = [
   { value: 'en', label: 'English' },
 ]
 
-// All IANA timezones from the runtime (cast: not in every TS lib version yet).
-const intlWithZones = Intl as typeof Intl & {
-  supportedValuesOf?: (key: 'timeZone') => string[]
-}
-const TIMEZONES = intlWithZones.supportedValuesOf?.('timeZone') ?? ['UTC']
+// Fixed GMT offsets (−12…+14, whole hours), stored as an ISO offset string.
+// Deliberately no daylight-saving handling — see the timezone note in chat.
+const TIMEZONES = Array.from({ length: 27 }, (_, i) => i - 12).map((h) => {
+  const sign = h < 0 ? '-' : '+'
+  const value = `${sign}${String(Math.abs(h)).padStart(2, '0')}:00`
+  return { value, label: h === 0 ? 'GMT' : `GMT${sign}${Math.abs(h)}` }
+})
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -136,7 +138,7 @@ export function SettingsPage() {
           {t('settings.timezone.label')}
         </span>
         <Select
-          value={settings?.timezone ?? 'UTC'}
+          value={settings?.timezone === 'UTC' ? '+00:00' : settings?.timezone}
           onValueChange={(value) => save.mutate({ timezone: value })}
         >
           <SelectTrigger className="w-full">
@@ -144,8 +146,8 @@ export function SettingsPage() {
           </SelectTrigger>
           <SelectContent>
             {TIMEZONES.map((zone) => (
-              <SelectItem key={zone} value={zone}>
-                {zone}
+              <SelectItem key={zone.value} value={zone.value}>
+                {zone.label}
               </SelectItem>
             ))}
           </SelectContent>

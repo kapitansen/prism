@@ -18,9 +18,9 @@ import {
 
 type Mode = 'review' | 'manage'
 
-// Conviction is stored 0–100; the deck uses these fixed levels as chips.
-// Tapping 0 drops the card from the deck (backend clears isFavorite).
-const CONVICTION_LEVELS = [0, 25, 50, 75, 100]
+// Conviction chips: 1–10. (0 stays valid server-side and drops the card from
+// the deck; that removal is the star button here.)
+const CONVICTION_LEVELS = Array.from({ length: 10 }, (_, i) => i + 1)
 
 export function CardsPage() {
   const { t } = useTranslation()
@@ -102,10 +102,12 @@ function ReviewMode() {
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4">
-      <span className="text-xs text-muted-foreground">
+      <span className="text-center text-xs text-muted-foreground">
         {`${safeIndex + 1} / ${deck.length}`}
       </span>
 
+      {/* Only [arrow · card · arrow] in this row, so the arrows centre on the
+          card itself; conviction lives below. */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -117,14 +119,11 @@ function ReviewMode() {
           <ChevronLeft className="size-6" />
         </button>
 
-        {/* keyed by id → per-card state (revealed, conviction) resets on change */}
-        <CardView
+        {/* keyed by id → flip state resets when the card changes */}
+        <ReviewCard
           key={card.id}
           card={card}
           onSwipe={(dir) => go(dir === 'left' ? 1 : -1)}
-          onCommitConviction={(value) =>
-            update.mutate({ id: card.id, patch: { conviction: value } })
-          }
           onRemoveFromDeck={() =>
             update.mutate({ id: card.id, patch: { isFavorite: false } })
           }
@@ -140,86 +139,99 @@ function ReviewMode() {
           <ChevronRight className="size-6" />
         </button>
       </div>
+
+      <ConvictionChips
+        key={`conviction-${card.id}`}
+        card={card}
+        onCommit={(value) =>
+          update.mutate({ id: card.id, patch: { conviction: value } })
+        }
+      />
     </div>
   )
 }
 
-function CardView({
+function ReviewCard({
   card,
   onSwipe,
-  onCommitConviction,
   onRemoveFromDeck,
 }: {
   card: CbtCard
   onSwipe: (dir: 'left' | 'right') => void
-  onCommitConviction: (value: number) => void
   onRemoveFromDeck: () => void
 }) {
   const { t } = useTranslation()
   const [revealed, setRevealed] = useState(false)
-  const [conviction, setConviction] = useState(card.conviction)
   const touchX = useRef<number | null>(null)
 
-  function selectConviction(value: number) {
+  return (
+    <div className="relative flex-1">
+      <button
+        type="button"
+        onClick={() => setRevealed((r) => !r)}
+        onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+        onTouchEnd={(e) => {
+          if (touchX.current === null) return
+          const dx = e.changedTouches[0].clientX - touchX.current
+          touchX.current = null
+          if (Math.abs(dx) > 50) onSwipe(dx < 0 ? 'left' : 'right')
+        }}
+        className="flex min-h-64 w-full flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
+      >
+        {!revealed ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <p className="text-lg font-medium">{card.title}</p>
+            <span className="text-xs text-muted-foreground">
+              {t('cards.reveal')}
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col gap-3">
+            <p className="text-sm font-medium text-muted-foreground">
+              {card.title}
+            </p>
+            <p className="max-h-80 overflow-y-auto whitespace-pre-wrap text-sm">
+              {card.explanation}
+            </p>
+          </div>
+        )}
+      </button>
+      <button
+        type="button"
+        aria-label={t('cards.removeFromDeck')}
+        onClick={onRemoveFromDeck}
+        className="absolute top-2 right-2 rounded-md p-1.5 text-foreground/60 transition hover:bg-muted hover:text-foreground"
+      >
+        <Star className="size-4 fill-current" />
+      </button>
+    </div>
+  )
+}
+
+function ConvictionChips({
+  card,
+  onCommit,
+}: {
+  card: CbtCard
+  onCommit: (value: number) => void
+}) {
+  const { t } = useTranslation()
+  const [conviction, setConviction] = useState(card.conviction)
+
+  function select(value: number) {
     setConviction(value)
-    if (value !== card.conviction) onCommitConviction(value)
+    if (value !== card.conviction) onCommit(value)
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setRevealed((r) => !r)}
-          onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
-          onTouchEnd={(e) => {
-            if (touchX.current === null) return
-            const dx = e.changedTouches[0].clientX - touchX.current
-            touchX.current = null
-            if (Math.abs(dx) > 50) onSwipe(dx < 0 ? 'left' : 'right')
-          }}
-          className="flex min-h-64 w-full flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
-        >
-          {!revealed ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-              <p className="text-lg font-medium">{card.title}</p>
-              <span className="text-xs text-muted-foreground">
-                {t('cards.reveal')}
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-1 flex-col gap-3">
-              <p className="text-sm font-medium text-muted-foreground">
-                {card.title}
-              </p>
-              <p className="max-h-80 overflow-y-auto whitespace-pre-wrap text-sm">
-                {card.explanation}
-              </p>
-            </div>
-          )}
-        </button>
-        <button
-          type="button"
-          aria-label={t('cards.removeFromDeck')}
-          onClick={onRemoveFromDeck}
-          className="absolute top-2 right-2 rounded-md p-1.5 text-foreground/60 transition hover:bg-muted hover:text-foreground"
-        >
-          <Star className="size-4 fill-current" />
-        </button>
-      </div>
-
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-xs font-medium">{t('cards.conviction')}</span>
-        <ChipGroup
-          ariaLabel={t('cards.conviction')}
-          value={conviction}
-          onChange={selectConviction}
-          options={CONVICTION_LEVELS.map((v) => ({
-            value: v,
-            label: String(v),
-          }))}
-        />
-      </div>
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-xs font-medium">{t('cards.conviction')}</span>
+      <ChipGroup
+        ariaLabel={t('cards.conviction')}
+        value={conviction}
+        onChange={select}
+        options={CONVICTION_LEVELS.map((v) => ({ value: v, label: String(v) }))}
+      />
     </div>
   )
 }

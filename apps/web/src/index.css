@@ -127,4 +127,17 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 dropped the default button cursor — restore pointer for every
+     interactive element across the app (disabled ones keep the default). */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='radio']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='option'],
+  a[href],
+  label,
+  summary,
+  select {
+    cursor: pointer;
+  }
 }

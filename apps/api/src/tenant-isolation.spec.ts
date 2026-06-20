@@ -316,7 +316,7 @@ describe('Tenant isolation (API)', () => {
       .expect(404)
   })
 
-  it('cbt: setting conviction to 0 removes the card from the deck', async () => {
+  it('cbt: conviction 0 removes the card from the deck; >10 is rejected', async () => {
     const id = await createCardAs(tokenA)
     await http()
       .patch(`/cbt-cards/${id}`)
@@ -330,6 +330,11 @@ describe('Tenant isolation (API)', () => {
       .expect(200)
     expect(dropped.body.isFavorite).toBe(false)
     expect(dropped.body.conviction).toBe(0)
+    await http()
+      .patch(`/cbt-cards/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ conviction: 11 })
+      .expect(400)
   })
 
   it('entries: filters by day and type', async () => {

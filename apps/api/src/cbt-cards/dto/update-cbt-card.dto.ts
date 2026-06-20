@@ -26,6 +26,6 @@ export class UpdateCbtCardDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(100)
+  @Max(10)
   conviction?: number
 }

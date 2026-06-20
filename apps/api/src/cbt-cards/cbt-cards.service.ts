@@ -20,6 +20,7 @@ export class CbtCardsService {
         userId,
         titleEnc: this.encryption.encrypt(dto.title),
         explanationEnc: this.encryption.encrypt(dto.explanation),
+        conviction: 5, // mid of the 1–10 scale (DB default is legacy 100)
       },
     })
     return this.toResponse(card)
@@ -52,7 +53,7 @@ export class CbtCardsService {
     if (dto.isFavorite !== undefined) data.isFavorite = dto.isFavorite
     if (dto.conviction !== undefined) {
       data.conviction = dto.conviction
-      // hitting 0 conviction drops the card from the review deck
+      // 0 conviction drops the card from the review deck
       if (dto.conviction === 0) data.isFavorite = false
     }
 
