@@ -98,7 +98,7 @@ model CbtCard {
   titleEnc       String   @map("title_enc") // trigger thought / situation
   explanationEnc String   @map("explanation_enc") // main text (multi-paragraph)
   isFavorite     Boolean  @default(false) @map("is_favorite") // in the review deck
-  conviction     Int      @default(100) @db.SmallInt // belief strength, UI scale 1–10; service sets 5 on create
+  conviction     Int      @default(5) @db.SmallInt // belief strength, 1–10 scale
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 

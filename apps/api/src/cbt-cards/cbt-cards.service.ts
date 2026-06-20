@@ -20,7 +20,6 @@ export class CbtCardsService {
         userId,
         titleEnc: this.encryption.encrypt(dto.title),
         explanationEnc: this.encryption.encrypt(dto.explanation),
-        conviction: 5, // mid of the 1–10 scale (DB default is legacy 100)
       },
     })
     return this.toResponse(card)
