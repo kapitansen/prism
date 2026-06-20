@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { DayInputPanel } from '@/components/day-input-panel'
 import { type EntryListItem, fetchEntries } from '@/lib/entries'
 
 const PAGE_SIZE = 20
@@ -45,6 +46,8 @@ export function JournalPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4">
       <h1 className="text-2xl font-semibold">{t('nav.journal')}</h1>
+
+      <DayInputPanel />
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">{t('journal.loading')}</p>
