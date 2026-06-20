@@ -2,6 +2,12 @@ import { ConfigService } from '@nestjs/config'
 import { hash } from '@node-rs/argon2'
 import { EntryType, PrismaClient } from '@prisma/client'
 
+import {
+  DEFAULT_ANALYSIS_MD,
+  DEFAULT_SOURCE_NOTE,
+  DEFAULT_THRESHOLDS,
+  DEFAULT_VOICE_MD,
+} from '../src/coach-pack/coach-pack.defaults'
 import { EncryptionService } from '../src/crypto/encryption.service'
 
 const prisma = new PrismaClient()
@@ -153,6 +159,26 @@ async function main() {
         where: { userId_key: { userId: user.id, key } },
         update: attrs, // keep definitions in sync with this file on re-seed
         create: { userId: user.id, key, ...attrs },
+      })
+    }
+
+    // Default coach pack (AI config) — seed once, then point settings at it.
+    if (
+      (await prisma.coachPackVersion.count({ where: { userId: user.id } })) ===
+      0
+    ) {
+      const pack = await prisma.coachPackVersion.create({
+        data: {
+          userId: user.id,
+          analysisMd: DEFAULT_ANALYSIS_MD,
+          voiceMd: DEFAULT_VOICE_MD,
+          thresholdsJson: DEFAULT_THRESHOLDS,
+          sourceNote: DEFAULT_SOURCE_NOTE,
+        },
+      })
+      await prisma.userSettings.update({
+        where: { userId: user.id },
+        data: { activeCoachPackVersionId: pack.id },
       })
     }
 

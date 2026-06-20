@@ -26,6 +26,7 @@ model User {
   cbtCards          CbtCard[]
   metricDefinitions MetricDefinition[]
   metricValues      MetricValue[]
+  coachPackVersions CoachPackVersion[]
 
   @@map("users")
 }
@@ -37,11 +38,32 @@ model UserSettings {
   theme       String   @default("system")
   themePreset String?  @map("theme_preset")
   timezone    String   @default("UTC")
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  // Pointer to the active coach-pack version (plain uuid, no FK: versions are
+  // never deleted, and deleting a user removes both rows together).
+  activeCoachPackVersionId String? @map("active_coach_pack_version_id") @db.Uuid
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
+}
+
+// Per-user, versioned AI config (spec §5.2 "coach pack"): the editable layers
+// 2–3. Layer 1 (core.md) stays in the repo, never in the DB. Each edit creates
+// a new row (immutable history); the active one is UserSettings pointer above.
+model CoachPackVersion {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  analysisMd     String   @map("analysis_md") // entry-analyst tuning
+  voiceMd        String   @map("voice_md") // companion-voice tone
+  thresholdsJson Json     @default("{}") @map("thresholds_json") // numeric knobs
+  sourceNote     String   @map("source_note") // provenance of this version
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("coach_pack_versions")
 }
 
 // ── Journal ────────────────────────────────────────────────────

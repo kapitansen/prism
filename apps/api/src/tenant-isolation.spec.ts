@@ -73,6 +73,7 @@ describe('Tenant isolation (API)', () => {
     await prisma.entity.deleteMany()
     await prisma.metricValue.deleteMany()
     await prisma.cbtCard.deleteMany()
+    await prisma.coachPackVersion.deleteMany()
   })
 
   afterAll(async () => {
@@ -379,5 +380,60 @@ describe('Tenant isolation (API)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(201)
     expect(res.body.ingestStatus).toBe('pending')
+  })
+
+  it('coach-pack: GET auto-seeds a default active version', async () => {
+    const res = await http()
+      .get('/coach-pack')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(res.body.id).toBeTruthy()
+    expect(res.body.voiceMd).toBeTruthy()
+  })
+
+  it('coach-pack: saving a version makes it active; history kept', async () => {
+    await http()
+      .get('/coach-pack')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    const created = await http()
+      .post('/coach-pack/versions')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ analysisMd: 'a2', voiceMd: 'v2', sourceNote: 'test' })
+      .expect(201)
+    const active = await http()
+      .get('/coach-pack')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(active.body.id).toBe(created.body.id)
+    expect(active.body.voiceMd).toBe('v2')
+    const versions = await http()
+      .get('/coach-pack/versions')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(versions.body.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("coach-pack: B cannot see or activate A's version", async () => {
+    const created = await http()
+      .post('/coach-pack/versions')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ analysisMd: 'a', voiceMd: 'v' })
+      .expect(201)
+    const bList = await http()
+      .get('/coach-pack/versions')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200)
+    expect(
+      bList.body.find((v: { id: string }) => v.id === created.body.id),
+    ).toBeUndefined()
+    await http()
+      .post(`/coach-pack/versions/${created.body.id}/activate`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404)
+  })
+
+  it('coach-pack: requires a token (401)', async () => {
+    await http().get('/coach-pack').expect(401)
   })
 })

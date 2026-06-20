@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config'
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
 import { CbtCardsModule } from './cbt-cards/cbt-cards.module'
+import { CoachPackModule } from './coach-pack/coach-pack.module'
 import { CryptoModule } from './crypto/crypto.module'
 import { EntitiesModule } from './entities/entities.module'
 import { EntriesModule } from './entries/entries.module'
@@ -19,6 +20,7 @@ import { SettingsModule } from './settings/settings.module'
     PrismaModule,
     AuthModule,
     CbtCardsModule,
+    CoachPackModule,
     EntriesModule,
     EntitiesModule,
     MetricsModule,

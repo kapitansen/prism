@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
+import { CoachPackSettings } from '@/components/coach-pack-settings'
 import { type Theme, useTheme } from '@/components/theme-provider'
 import {
   Select,
@@ -153,6 +154,8 @@ export function SettingsPage() {
           </SelectContent>
         </Select>
       </section>
+
+      <CoachPackSettings />
     </div>
   )
 }
