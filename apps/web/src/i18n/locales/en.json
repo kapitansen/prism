@@ -46,7 +46,8 @@
   "journal": {
     "loading": "Loading…",
     "error": "Couldn't load entries",
-    "empty": "No entries yet"
+    "empty": "No entries yet",
+    "addEntry": "Add entry"
   },
   "people": {
     "loading": "Loading…",

@@ -3,6 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -20,6 +21,7 @@ const PAGE_SIZE = 20
 
 export function JournalPage() {
   const { t } = useTranslation()
+  const [composerOpen, setComposerOpen] = useState(false)
 
   const {
     data,
@@ -56,7 +58,28 @@ export function JournalPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
-      <DayInputPanel />
+      {composerOpen ? (
+        <div className="flex flex-col gap-2">
+          <DayInputPanel />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-end"
+            onClick={() => setComposerOpen(false)}
+          >
+            {t('common.done')}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          className="gap-2 self-start"
+          onClick={() => setComposerOpen(true)}
+        >
+          <Plus className="size-4" />
+          {t('journal.addEntry')}
+        </Button>
+      )}
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">{t('journal.loading')}</p>
