@@ -56,11 +56,11 @@ function shiftIso(iso: string, deltaDays: number) {
 // The whole day-input block: date selector + metric chips + autosaving day
 // text. Self-contained (own date state + queries), so it can be dropped on any
 // screen — currently Today and Journal (DRY).
-export function DayInputPanel() {
+export function DayInputPanel({ initialDate }: { initialDate?: string } = {}) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const todayStr = todayIso()
-  const [date, setDate] = useState(todayStr)
+  const [date, setDate] = useState(initialDate ?? todayStr)
   const [calOpen, setCalOpen] = useState(false)
   const isToday = date === todayStr
   const dateLabel = isoToDate(date).toLocaleDateString(i18n.language, {

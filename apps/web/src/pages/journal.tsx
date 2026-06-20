@@ -107,6 +107,23 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
     onSuccess: invalidate,
   })
 
+  // A daily entry edits the whole day (text + metric chips) — reuse the panel.
+  if (editing && entry.type === 'daily') {
+    return (
+      <div className="flex flex-col gap-2">
+        <DayInputPanel initialDate={entry.occurredOn.slice(0, 10)} />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-end"
+          onClick={() => setEditing(false)}
+        >
+          {t('common.done')}
+        </Button>
+      </div>
+    )
+  }
+
   if (editing) {
     return (
       <article className="rounded-lg border p-4">
