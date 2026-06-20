@@ -172,7 +172,7 @@ export function DayInputPanel() {
       {defsQuery.isError && (
         <p className="text-sm text-destructive">{t('today.error')}</p>
       )}
-      <div className="flex flex-wrap gap-x-8 gap-y-4">
+      <div className="flex flex-wrap gap-x-6 gap-y-4">
         {manual.map((d) => (
           <div key={d.key} className="flex flex-col items-center gap-1.5">
             <span className="text-sm text-muted-foreground">{label(d)}</span>

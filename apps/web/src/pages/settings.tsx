@@ -49,9 +49,7 @@ export function SettingsPage() {
   })
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4">
-      <h1 className="text-2xl font-semibold">{t('nav.settings')}</h1>
-
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-4">
       {/* Light / dark mode */}
       <section className="flex max-w-md flex-col gap-2">
         <div className="flex flex-col gap-0.5">
