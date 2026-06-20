@@ -49,23 +49,6 @@ function shiftIso(iso: string, deltaDays: number) {
   return dateToIso(d)
 }
 
-// Soft red→green ramp for the 1–5 metric chips. Full static class strings so
-// Tailwind keeps them; index 0 = value 1.
-const METRIC_TINT = [
-  'bg-red-100 text-red-700 hover:bg-red-200',
-  'bg-orange-100 text-orange-700 hover:bg-orange-200',
-  'bg-amber-100 text-amber-700 hover:bg-amber-200',
-  'bg-lime-100 text-lime-700 hover:bg-lime-200',
-  'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
-]
-const METRIC_TINT_SELECTED = [
-  'bg-red-300 text-red-950',
-  'bg-orange-300 text-orange-950',
-  'bg-amber-300 text-amber-950',
-  'bg-lime-300 text-lime-950',
-  'bg-emerald-400 text-emerald-950',
-]
-
 export function TodayPage() {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
@@ -197,40 +180,31 @@ export function TodayPage() {
               <p className="text-sm text-destructive">{t('today.error')}</p>
             )}
             <div className="flex flex-wrap gap-x-8 gap-y-4">
-              {manual.map((d) => {
-                const count = d.scaleMax - d.scaleMin + 1
-                const fiveScale = count === 5
-                return (
-                  <div
-                    key={d.key}
-                    className="flex flex-col items-center gap-1.5"
-                  >
-                    <span className="text-sm text-muted-foreground">
-                      {label(d)}
-                    </span>
-                    <ChipGroup
-                      size="sm"
-                      ariaLabel={label(d)}
-                      value={valueFor(d.key)}
-                      onChange={(value) =>
-                        record.mutate({
-                          metricKey: d.key,
-                          value,
-                          occurredOn: date,
-                        })
-                      }
-                      options={Array.from({ length: count }, (_, i) => ({
+              {manual.map((d) => (
+                <div key={d.key} className="flex flex-col items-center gap-1.5">
+                  <span className="text-sm text-muted-foreground">
+                    {label(d)}
+                  </span>
+                  <ChipGroup
+                    ariaLabel={label(d)}
+                    value={valueFor(d.key)}
+                    onChange={(value) =>
+                      record.mutate({
+                        metricKey: d.key,
+                        value,
+                        occurredOn: date,
+                      })
+                    }
+                    options={Array.from(
+                      { length: d.scaleMax - d.scaleMin + 1 },
+                      (_, i) => ({
                         value: d.scaleMin + i,
                         label: String(d.scaleMin + i),
-                        className: fiveScale ? METRIC_TINT[i] : undefined,
-                        selectedClassName: fiveScale
-                          ? METRIC_TINT_SELECTED[i]
-                          : undefined,
-                      }))}
-                    />
-                  </div>
-                )
-              })}
+                      }),
+                    )}
+                  />
+                </div>
+              ))}
             </div>
 
             {/* Day entry */}
