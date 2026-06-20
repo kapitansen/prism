@@ -30,6 +30,7 @@ export function createEntry(input: {
   type: string
   body: string
   occurredOn: string
+  occurredTo?: string
   title?: string
 }) {
   return api.post<EntryListItem>('/entries', input)
