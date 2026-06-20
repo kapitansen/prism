@@ -59,17 +59,7 @@ export function JournalPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
       {composerOpen ? (
-        <div className="flex flex-col gap-2">
-          <DayInputPanel />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="self-end"
-            onClick={() => setComposerOpen(false)}
-          >
-            {t('common.done')}
-          </Button>
-        </div>
+        <DayInputPanel onClose={() => setComposerOpen(false)} />
       ) : (
         <Button
           variant="outline"
@@ -133,17 +123,10 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
   // A daily entry edits the whole day (text + metric chips) — reuse the panel.
   if (editing && entry.type === 'daily') {
     return (
-      <div className="flex flex-col gap-2">
-        <DayInputPanel initialDate={entry.occurredOn.slice(0, 10)} />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="self-end"
-          onClick={() => setEditing(false)}
-        >
-          {t('common.done')}
-        </Button>
-      </div>
+      <DayInputPanel
+        initialDate={entry.occurredOn.slice(0, 10)}
+        onClose={() => setEditing(false)}
+      />
     )
   }
 

@@ -15,6 +15,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "done": "Done",
+    "close": "Close",
     "loading": "Loading…",
     "deleteConfirmTitle": "Delete?",
     "deleteConfirmText": "This action cannot be undone."

@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  X,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -56,7 +57,13 @@ function shiftIso(iso: string, deltaDays: number) {
 // The whole day-input block: date selector + metric chips + autosaving day
 // text. Self-contained (own date state + queries), so it can be dropped on any
 // screen — currently Today and Journal (DRY).
-export function DayInputPanel({ initialDate }: { initialDate?: string } = {}) {
+export function DayInputPanel({
+  initialDate,
+  onClose,
+}: {
+  initialDate?: string
+  onClose?: () => void
+} = {}) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const todayStr = todayIso()
@@ -110,7 +117,17 @@ export function DayInputPanel({ initialDate }: { initialDate?: string } = {}) {
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
+    <div className="relative flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
+      {onClose && (
+        <button
+          type="button"
+          aria-label={t('common.close')}
+          onClick={onClose}
+          className="absolute top-3 right-3 rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+      )}
       {/* Date selector: calendar · today · prev · next */}
       <div className="flex flex-wrap items-center gap-1.5">
         <Popover open={calOpen} onOpenChange={setCalOpen}>
