@@ -26,8 +26,8 @@ const METRICS = [
     source: 'manual',
   },
   {
-    key: 'fatigue',
-    name: 'Fatigue',
+    key: 'energy',
+    name: 'Energy',
     scaleMin: 1,
     scaleMax: 5,
     source: 'manual',

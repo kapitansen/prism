@@ -32,7 +32,7 @@
     "metric": {
       "mood": "Mood",
       "sleep_quality": "Sleep quality",
-      "fatigue": "Fatigue",
+      "energy": "Energy",
       "activity": "Activity"
     }
   },

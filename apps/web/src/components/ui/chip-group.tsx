@@ -43,7 +43,7 @@ export function ChipGroup<T extends string | number>({
             aria-checked={selected}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'min-w-9 px-3 py-1.5 text-sm font-medium transition',
+              'inline-flex h-8 min-w-8 items-center justify-center px-3 text-sm font-medium transition',
               selected
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
