@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation } from 'react-router'
 
 import { AppSidebar } from '@/components/app-sidebar'
+import { HeaderActionsContext } from '@/components/header-actions'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,6 +18,8 @@ export function AppLayout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   useSettingsSync() // load + apply saved theme/language once authenticated
+  // Pages portal their actions into this header node (set once via ref).
+  const [headerActions, setHeaderActions] = useState<HTMLElement | null>(null)
   const current = [...mainNav, settingsNav].find(
     (item) => item.path === pathname,
   )
@@ -34,8 +38,14 @@ export function AppLayout() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div
+            ref={setHeaderActions}
+            className="ml-auto flex items-center gap-2"
+          />
         </header>
-        <Outlet />
+        <HeaderActionsContext.Provider value={headerActions}>
+          <Outlet />
+        </HeaderActionsContext.Provider>
       </SidebarInset>
     </SidebarProvider>
   )

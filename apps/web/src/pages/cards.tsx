@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import { type ComponentProps, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { HeaderActions } from '@/components/header-actions'
 import { Button } from '@/components/ui/button'
 import { ChipGroup } from '@/components/ui/chip-group'
 import { Input } from '@/components/ui/input'
@@ -27,7 +28,7 @@ export function CardsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-end gap-2">
+      <HeaderActions>
         <div className="flex gap-1 rounded-lg border p-1">
           <Button
             size="sm"
@@ -44,7 +45,7 @@ export function CardsPage() {
             {t('cards.manage')}
           </Button>
         </div>
-      </div>
+      </HeaderActions>
 
       {mode === 'review' ? <ReviewMode /> : <ManageMode />}
     </div>
@@ -105,15 +106,15 @@ function ReviewMode() {
         {`${safeIndex + 1} / ${deck.length}`}
       </span>
 
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           aria-label={t('cards.prev')}
           disabled={safeIndex === 0}
           onClick={() => go(-1)}
-          className="flex shrink-0 items-center justify-center rounded-lg px-2 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
+          className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
-          <ChevronLeft className="size-10" />
+          <ChevronLeft className="size-6" />
         </button>
 
         {/* keyed by id → per-card state (revealed, conviction) resets on change */}
@@ -134,9 +135,9 @@ function ReviewMode() {
           aria-label={t('cards.next')}
           disabled={safeIndex === deck.length - 1}
           onClick={() => go(1)}
-          className="flex shrink-0 items-center justify-center rounded-lg px-2 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
+          className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
-          <ChevronRight className="size-10" />
+          <ChevronRight className="size-6" />
         </button>
       </div>
     </div>
@@ -166,47 +167,46 @@ function CardView({
 
   return (
     <div className="flex flex-1 flex-col gap-3">
-      <div className="flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={onRemoveFromDeck}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setRevealed((r) => !r)}
+          onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+          onTouchEnd={(e) => {
+            if (touchX.current === null) return
+            const dx = e.changedTouches[0].clientX - touchX.current
+            touchX.current = null
+            if (Math.abs(dx) > 50) onSwipe(dx < 0 ? 'left' : 'right')
+          }}
+          className="flex min-h-64 w-full flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
         >
-          <Star className="fill-current" />
-          {t('cards.removeFromDeck')}
-        </Button>
+          {!revealed ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+              <p className="text-lg font-medium">{card.title}</p>
+              <span className="text-xs text-muted-foreground">
+                {t('cards.reveal')}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col gap-3">
+              <p className="text-sm font-medium text-muted-foreground">
+                {card.title}
+              </p>
+              <p className="max-h-80 overflow-y-auto whitespace-pre-wrap text-sm">
+                {card.explanation}
+              </p>
+            </div>
+          )}
+        </button>
+        <button
+          type="button"
+          aria-label={t('cards.removeFromDeck')}
+          onClick={onRemoveFromDeck}
+          className="absolute top-2 right-2 rounded-md p-1.5 text-foreground/60 transition hover:bg-muted hover:text-foreground"
+        >
+          <Star className="size-4 fill-current" />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => setRevealed((r) => !r)}
-        onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
-        onTouchEnd={(e) => {
-          if (touchX.current === null) return
-          const dx = e.changedTouches[0].clientX - touchX.current
-          touchX.current = null
-          if (Math.abs(dx) > 50) onSwipe(dx < 0 ? 'left' : 'right')
-        }}
-        className="flex min-h-64 flex-1 flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
-      >
-        {!revealed ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-            <p className="text-lg font-medium">{card.title}</p>
-            <span className="text-xs text-muted-foreground">
-              {t('cards.reveal')}
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-1 flex-col gap-3">
-            <p className="text-sm font-medium text-muted-foreground">
-              {card.title}
-            </p>
-            <p className="max-h-80 overflow-y-auto whitespace-pre-wrap text-sm">
-              {card.explanation}
-            </p>
-          </div>
-        )}
-      </button>
 
       <div className="flex flex-col items-center gap-1">
         <span className="text-xs font-medium">{t('cards.conviction')}</span>
