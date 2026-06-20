@@ -63,10 +63,12 @@ function ReviewMode() {
   })
   const deck = data ?? []
 
-  // index is unclamped state; we derive a safe index for render so the deck
+  // index is unclamped state; we wrap it into range for render so the deck
   // shrinking (conviction → 0) needs no state-sync effect.
   const [index, setIndex] = useState(0)
-  const safeIndex = deck.length ? Math.min(index, deck.length - 1) : 0
+  const safeIndex = deck.length
+    ? ((index % deck.length) + deck.length) % deck.length
+    : 0
   const card: CbtCard | undefined = deck[safeIndex]
 
   const update = useMutation({
@@ -75,11 +77,11 @@ function ReviewMode() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cbt-cards'] }),
   })
 
+  // Cyclic: wrap around both ends so the deck loops.
   function go(delta: number) {
-    setIndex((i) => {
-      const cur = deck.length ? Math.min(i, deck.length - 1) : 0
-      return Math.min(deck.length - 1, Math.max(0, cur + delta))
-    })
+    const len = deck.length
+    if (!len) return
+    setIndex((i) => (((i + delta) % len) + len) % len)
   }
 
   // Keyboard arrows
@@ -112,7 +114,6 @@ function ReviewMode() {
         <button
           type="button"
           aria-label={t('cards.prev')}
-          disabled={safeIndex === 0}
           onClick={() => go(-1)}
           className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
@@ -132,7 +133,6 @@ function ReviewMode() {
         <button
           type="button"
           aria-label={t('cards.next')}
-          disabled={safeIndex === deck.length - 1}
           onClick={() => go(1)}
           className="flex size-12 shrink-0 items-center justify-center rounded-lg border text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
         >
