@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { type Theme, useTheme } from '@/components/theme-provider'
@@ -10,7 +10,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { themePresets } from '@/config/themes'
-import { settingsKey, updateSettings, type UserSettings } from '@/lib/settings'
+import {
+  fetchSettings,
+  settingsKey,
+  updateSettings,
+  type UserSettings,
+} from '@/lib/settings'
 
 // Languages are listed by their own name (endonym), the same in any UI
 // language — so these labels are intentionally not translated.
@@ -19,10 +24,22 @@ const LANGUAGES = [
   { value: 'en', label: 'English' },
 ]
 
+// All IANA timezones from the runtime (cast: not in every TS lib version yet).
+const intlWithZones = Intl as typeof Intl & {
+  supportedValuesOf?: (key: 'timeZone') => string[]
+}
+const TIMEZONES = intlWithZones.supportedValuesOf?.('timeZone') ?? ['UTC']
+
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
   const { theme, setTheme, colorTheme, setColorTheme } = useTheme()
   const queryClient = useQueryClient()
+  // Saved settings (already fetched by useSettingsSync) — used for timezone,
+  // which has no separate "instant-apply" layer like theme/language do.
+  const { data: settings } = useQuery({
+    queryKey: settingsKey,
+    queryFn: fetchSettings,
+  })
 
   // Persist a change to the backend; keep the cache in sync with the response.
   const save = useMutation({
@@ -32,7 +49,7 @@ export function SettingsPage() {
   })
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4">
       <h1 className="text-2xl font-semibold">{t('nav.settings')}</h1>
 
       {/* Light / dark mode */}
@@ -109,6 +126,28 @@ export function SettingsPage() {
             {LANGUAGES.map((language) => (
               <SelectItem key={language.value} value={language.value}>
                 {language.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </section>
+
+      {/* Timezone */}
+      <section className="flex max-w-md flex-col gap-2">
+        <span className="text-sm font-medium">
+          {t('settings.timezone.label')}
+        </span>
+        <Select
+          value={settings?.timezone ?? 'UTC'}
+          onValueChange={(value) => save.mutate({ timezone: value })}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIMEZONES.map((zone) => (
+              <SelectItem key={zone} value={zone}>
+                {zone}
               </SelectItem>
             ))}
           </SelectContent>

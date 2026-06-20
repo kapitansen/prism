@@ -99,6 +99,9 @@
     },
     "language": {
       "label": "Interface language"
+    },
+    "timezone": {
+      "label": "Timezone"
     }
   }
 }

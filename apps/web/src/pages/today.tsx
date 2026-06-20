@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { enUS, ru } from 'date-fns/locale'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  CalendarCheck,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -116,16 +121,8 @@ export function TodayPage() {
 
           {/* Day-input panel — one card, placeholder style */}
           <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
-            {/* Date selector */}
-            <div className="flex flex-wrap items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t('today.prevDay')}
-                onClick={() => setDate((d) => shiftIso(d, -1))}
-              >
-                <ChevronLeft />
-              </Button>
+            {/* Date selector: calendar · today · prev · next */}
+            <div className="flex flex-wrap items-center gap-1.5">
               <Popover open={calOpen} onOpenChange={setCalOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2 text-base">
@@ -151,7 +148,24 @@ export function TodayPage() {
                 </PopoverContent>
               </Popover>
               <Button
-                variant="ghost"
+                variant="outline"
+                size="icon"
+                aria-label={t('today.jumpToday')}
+                disabled={isToday}
+                onClick={() => setDate(todayStr)}
+              >
+                <CalendarCheck />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t('today.prevDay')}
+                onClick={() => setDate((d) => shiftIso(d, -1))}
+              >
+                <ChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
                 size="icon"
                 aria-label={t('today.nextDay')}
                 disabled={isToday}
@@ -159,15 +173,6 @@ export function TodayPage() {
               >
                 <ChevronRight />
               </Button>
-              {!isToday && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDate(todayStr)}
-                >
-                  {t('today.jumpToday')}
-                </Button>
-              )}
             </div>
 
             {/* Metric chips — label on top, chips below, wrapping in a row */}
@@ -271,6 +276,7 @@ function DayEditor({
   initialStatus: string
 }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [text, setText] = useState(initialText)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   // Day-level lifecycle (ingest_status). 'draft' = still open for the button.
@@ -297,16 +303,20 @@ function DayEditor({
     inFlight.current = true
     setStatus('saving')
     try {
+      let saved
       if (entryId.current) {
-        await updateEntry(entryId.current, { body: value })
+        saved = await updateEntry(entryId.current, { body: value })
       } else {
-        const created = await createEntry({
+        saved = await createEntry({
           type: 'daily',
           body: value,
           occurredOn: date,
         })
-        entryId.current = created.id
+        entryId.current = saved.id
       }
+      // Keep the day-entry cache fresh so re-opening this day shows the saved
+      // text immediately (metric chips already do this via invalidate).
+      queryClient.setQueryData(['day-entry', date], saved)
       setLastSaved(value)
       setStatus('saved')
     } finally {
@@ -333,6 +343,7 @@ function DayEditor({
     await saveNow() // make sure the latest text is saved (and entry created)
     if (!entryId.current) return
     const updated = await finalizeEntry(entryId.current)
+    queryClient.setQueryData(['day-entry', date], updated)
     setDayStatus(updated.ingestStatus)
   }
 
