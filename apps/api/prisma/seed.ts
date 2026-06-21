@@ -5,7 +5,6 @@ import { EntryType, PrismaClient } from '@prisma/client'
 import {
   DEFAULT_ANALYSIS_MD,
   DEFAULT_SOURCE_NOTE,
-  DEFAULT_THRESHOLDS,
   DEFAULT_VOICE_MD,
 } from '../src/coach-pack/coach-pack.defaults'
 import { EncryptionService } from '../src/crypto/encryption.service'
@@ -172,7 +171,6 @@ async function main() {
           userId: user.id,
           analysisMd: DEFAULT_ANALYSIS_MD,
           voiceMd: DEFAULT_VOICE_MD,
-          thresholdsJson: DEFAULT_THRESHOLDS,
           sourceNote: DEFAULT_SOURCE_NOTE,
         },
       })

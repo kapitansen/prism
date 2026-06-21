@@ -54,10 +54,9 @@ model UserSettings {
 model CoachPackVersion {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId         String   @map("user_id") @db.Uuid
-  analysisMd     String   @map("analysis_md") // entry-analyst tuning
-  voiceMd        String   @map("voice_md") // companion-voice tone
-  thresholdsJson Json     @default("{}") @map("thresholds_json") // numeric knobs
-  sourceNote     String   @map("source_note") // provenance of this version
+  analysisMd String @map("analysis_md") // entry-analyst tuning
+  voiceMd    String @map("voice_md") // companion-voice tone
+  sourceNote String @map("source_note") // provenance of this version
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

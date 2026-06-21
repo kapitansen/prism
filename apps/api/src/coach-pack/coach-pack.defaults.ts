@@ -15,6 +15,4 @@ export const DEFAULT_ANALYSIS_MD = `# Разбор дня
 - Уточняющие вопросы — максимум 3, по делу, дружеским тоном.
 `
 
-export const DEFAULT_THRESHOLDS = { sleepStreakDays: 5 }
-
 export const DEFAULT_SOURCE_NOTE = 'default'

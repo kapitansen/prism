@@ -5,7 +5,6 @@ export interface CoachPackVersion {
   id: string
   analysisMd: string
   voiceMd: string
-  thresholdsJson: Record<string, unknown>
   sourceNote: string
   createdAt: string
 }
@@ -28,7 +27,6 @@ export function fetchCoachPackVersions() {
 export function createCoachPackVersion(input: {
   analysisMd: string
   voiceMd: string
-  thresholdsJson?: Record<string, unknown>
   sourceNote?: string
 }) {
   return api.post<CoachPackVersion>('/coach-pack/versions', input)

@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { CoachPackVersion, Prisma } from '@prisma/client'
+import { CoachPackVersion } from '@prisma/client'
 
 import { PrismaService } from '../prisma/prisma.service'
 import {
   DEFAULT_ANALYSIS_MD,
   DEFAULT_SOURCE_NOTE,
-  DEFAULT_THRESHOLDS,
   DEFAULT_VOICE_MD,
 } from './coach-pack.defaults'
 import { CreateCoachPackVersionDto } from './dto/create-coach-pack-version.dto'
@@ -51,7 +50,6 @@ export class CoachPackService {
         userId,
         analysisMd: dto.analysisMd,
         voiceMd: dto.voiceMd,
-        thresholdsJson: (dto.thresholdsJson ?? {}) as Prisma.InputJsonValue,
         sourceNote: dto.sourceNote ?? 'manual edit',
       },
     })
@@ -77,7 +75,6 @@ export class CoachPackService {
         userId,
         analysisMd: DEFAULT_ANALYSIS_MD,
         voiceMd: DEFAULT_VOICE_MD,
-        thresholdsJson: DEFAULT_THRESHOLDS,
         sourceNote: DEFAULT_SOURCE_NOTE,
       },
     })
@@ -99,7 +96,6 @@ export class CoachPackService {
       id: v.id,
       analysisMd: v.analysisMd,
       voiceMd: v.voiceMd,
-      thresholdsJson: v.thresholdsJson,
       sourceNote: v.sourceNote,
       createdAt: v.createdAt,
     }

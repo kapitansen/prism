@@ -47,17 +47,12 @@ function CoachPackEditor({ active }: { active: CoachPackVersion }) {
   const queryClient = useQueryClient()
   const [voiceMd, setVoiceMd] = useState(active.voiceMd)
   const [analysisMd, setAnalysisMd] = useState(active.analysisMd)
-  const [thresholds, setThresholds] = useState(
-    JSON.stringify(active.thresholdsJson, null, 2),
-  )
-  const [jsonError, setJsonError] = useState(false)
 
   const save = useMutation({
-    mutationFn: (thresholdsJson: Record<string, unknown>) =>
+    mutationFn: () =>
       createCoachPackVersion({
         voiceMd,
         analysisMd,
-        thresholdsJson,
         sourceNote: 'manual edit',
       }),
     onSuccess: () => {
@@ -65,18 +60,6 @@ function CoachPackEditor({ active }: { active: CoachPackVersion }) {
       void queryClient.invalidateQueries({ queryKey: coachPackVersionsKey })
     },
   })
-
-  function onSave() {
-    let parsed: Record<string, unknown>
-    try {
-      parsed = thresholds.trim() ? JSON.parse(thresholds) : {}
-    } catch {
-      setJsonError(true)
-      return
-    }
-    setJsonError(false)
-    save.mutate(parsed)
-  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -94,20 +77,12 @@ function CoachPackEditor({ active }: { active: CoachPackVersion }) {
           rows={10}
         />
       </Field>
-      <Field label={t('settings.ai.thresholds')}>
-        <Textarea
-          value={thresholds}
-          onChange={(e) => setThresholds(e.target.value)}
-          rows={3}
-          className="font-mono"
-        />
-        {jsonError && (
-          <span className="text-xs text-destructive">
-            {t('settings.ai.thresholdsInvalid')}
-          </span>
-        )}
-      </Field>
-      <Button size="sm" className="self-start" onClick={onSave}>
+      <Button
+        size="sm"
+        className="self-start"
+        disabled={save.isPending}
+        onClick={() => save.mutate()}
+      >
         {t('common.save')}
       </Button>
     </div>

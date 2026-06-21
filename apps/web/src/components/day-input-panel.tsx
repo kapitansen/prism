@@ -80,6 +80,7 @@ export function DayInputPanel({
   const todayStr = todayIso()
   const [from, setFrom] = useState(initialDate ?? todayStr)
   const [to, setTo] = useState<string | null>(null)
+  const [pickMode, setPickMode] = useState<'single' | 'range'>('single')
   const [calOpen, setCalOpen] = useState(false)
   const isRange = to !== null && to !== from
   const days = isRange ? daysBetween(from, to) : [from]
@@ -95,6 +96,7 @@ export function DayInputPanel({
   const pickSingle = (iso: string) => {
     setFrom(iso)
     setTo(null)
+    setPickMode('single')
   }
 
   const defsQuery = useQuery({
@@ -161,26 +163,58 @@ export function DayInputPanel({
               {dateLabel}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              locale={calendarLocale}
-              selected={{
-                from: isoToDate(from),
-                to: to ? isoToDate(to) : isoToDate(from),
+          <PopoverContent
+            className="flex w-auto flex-col gap-2 p-2"
+            align="start"
+          >
+            {/* explicit mode toggle — no guessing single vs range */}
+            <ChipGroup
+              ariaLabel={t('today.dateMode')}
+              value={pickMode}
+              onChange={(m) => {
+                setPickMode(m)
+                if (m === 'single') setTo(null)
               }}
-              defaultMonth={isoToDate(from)}
-              disabled={{ after: isoToDate(todayStr) }}
-              onSelect={(range) => {
-                if (!range?.from) return
-                const f = dateToIso(range.from)
-                const e = range.to ? dateToIso(range.to) : null
-                setFrom(f)
-                setTo(e && e !== f ? e : null)
-                if (range.to) setCalOpen(false) // complete range → close
-              }}
-              autoFocus
+              options={[
+                { value: 'single', label: t('today.dateSingle') },
+                { value: 'range', label: t('today.dateRange') },
+              ]}
             />
+            {pickMode === 'single' ? (
+              <Calendar
+                mode="single"
+                locale={calendarLocale}
+                selected={isoToDate(from)}
+                defaultMonth={isoToDate(from)}
+                disabled={{ after: isoToDate(todayStr) }}
+                onSelect={(d) => {
+                  if (!d) return
+                  setFrom(dateToIso(d))
+                  setTo(null)
+                  setCalOpen(false)
+                }}
+                autoFocus
+              />
+            ) : (
+              <Calendar
+                mode="range"
+                locale={calendarLocale}
+                selected={{
+                  from: isoToDate(from),
+                  to: to ? isoToDate(to) : undefined,
+                }}
+                defaultMonth={isoToDate(from)}
+                disabled={{ after: isoToDate(todayStr) }}
+                onSelect={(range) => {
+                  if (!range?.from) return
+                  const f = dateToIso(range.from)
+                  setFrom(f)
+                  setTo(range.to ? dateToIso(range.to) : null)
+                  if (range.to) setCalOpen(false) // both ends picked → close
+                }}
+                autoFocus
+              />
+            )}
           </PopoverContent>
         </Popover>
         <Button
