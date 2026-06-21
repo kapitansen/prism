@@ -11,12 +11,16 @@ import {
   type ParseResponse,
   parseResponseSchema,
 } from '@prism/shared'
+import { Entry } from '@prisma/client'
 
+import { CoachPackService } from '../coach-pack/coach-pack.service'
 import { EncryptionService } from '../crypto/encryption.service'
 import { LLM_RUNNER, type LlmRunner } from '../llm/llm-runner.port'
 import { PrismaService } from '../prisma/prisma.service'
 import { ParseDayDto } from './dto/parse-day.dto'
-import { buildParsePrompt } from './prompt'
+import { mentioned } from './entity-match'
+import { buildParsePrompt, type ParseContext } from './prompt'
+import { loadSkills } from './skills'
 
 // The day's analysis, kept (encrypted) on the entry: answered Q&A across rounds,
 // the last LLM proposal (for resume/display), and the committed result (history).
@@ -31,6 +35,7 @@ export class AnalysisService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly coachPack: CoachPackService,
     @Inject(LLM_RUNNER) private readonly llm: LlmRunner,
   ) {}
 
@@ -49,22 +54,90 @@ export class AnalysisService {
     const state = this.loadState(entry.analysisEnc)
     if (dto.answers?.length) state.answeredQa.push(...dto.answers)
 
-    const values = await this.prisma.metricValue.findMany({
-      where: { userId, occurredOn: entry.occurredOn, source: 'manual' },
-    })
+    const body = this.encryption.decrypt(entry.bodyEnc)
+    const [values, coach, metricDefs, context] = await Promise.all([
+      this.prisma.metricValue.findMany({
+        where: { userId, occurredOn: entry.occurredOn, source: 'manual' },
+      }),
+      this.coachPack.getActive(userId),
+      this.prisma.metricDefinition.findMany({ where: { userId } }),
+      this.buildContext(userId, entry, body),
+    ])
     const prompt = buildParsePrompt({
-      body: this.encryption.decrypt(entry.bodyEnc),
+      skills: loadSkills(),
+      coach: { analysisMd: coach.analysisMd, voiceMd: coach.voiceMd },
+      metricDefs: metricDefs.map((d) => ({
+        key: d.key,
+        name: d.name,
+        unit: d.unit,
+        scaleMin: d.scaleMin,
+        scaleMax: d.scaleMax,
+        source: d.source,
+      })),
+      body,
       chips: values.map((v) => ({
         key: v.metricKey,
         value: v.value.toNumber(),
       })),
       answers: state.answeredQa,
+      context,
     })
 
     const response = this.validate(await this.llm.run(prompt))
     state.last = response
     await this.saveState(entry.id, state)
     return response
+  }
+
+  // Pull grounding context from the DB (spec layer 5): the user's entities (as
+  // candidates for existingId), dossiers of those likely mentioned today, CBT
+  // cards, and the few preceding days. All decrypted in memory.
+  private async buildContext(
+    userId: string,
+    entry: Entry,
+    body: string,
+  ): Promise<ParseContext> {
+    const [entities, cbtCards, recent] = await Promise.all([
+      this.prisma.entity.findMany({ where: { userId } }),
+      this.prisma.cbtCard.findMany({ where: { userId } }),
+      this.prisma.entry.findMany({
+        where: { userId, occurredOn: { lt: entry.occurredOn } },
+        orderBy: { occurredOn: 'desc' },
+        take: 5,
+      }),
+    ])
+
+    const decrypted = entities.map((e) => ({
+      id: e.id,
+      name: this.encryption.decrypt(e.nameEnc),
+      aliases: e.aliasesEnc
+        ? (JSON.parse(this.encryption.decrypt(e.aliasesEnc)) as string[])
+        : [],
+      type: e.type,
+      digest: e.digestEnc ? this.encryption.decrypt(e.digestEnc) : null,
+    }))
+
+    return {
+      entities: decrypted.map(({ id, name, aliases, type }) => ({
+        id,
+        name,
+        aliases,
+        type,
+      })),
+      dossiers: decrypted
+        .filter((e) => e.digest && mentioned(body, [e.name, ...e.aliases]))
+        .map((e) => ({ name: e.name, digest: e.digest as string })),
+      cbtCards: cbtCards.map((c) => ({
+        id: c.id,
+        title: this.encryption.decrypt(c.titleEnc),
+      })),
+      recentDays: recent.map((r) => ({
+        date: dayIso(r.occurredOn),
+        text: r.summaryEnc
+          ? this.encryption.decrypt(r.summaryEnc)
+          : truncate(this.encryption.decrypt(r.bodyEnc), 200),
+      })),
+    }
   }
 
   // Persist a confirmed (user-edited) extraction. Re-checks everything against
@@ -183,4 +256,12 @@ export class AnalysisService {
     }
     return result.data
   }
+}
+
+function dayIso(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? `${s.slice(0, max)}…` : s
 }

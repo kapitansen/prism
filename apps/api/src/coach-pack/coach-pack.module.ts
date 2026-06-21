@@ -8,5 +8,6 @@ import { CoachPackService } from './coach-pack.service'
   imports: [AuthModule],
   controllers: [CoachPackController],
   providers: [CoachPackService],
+  exports: [CoachPackService],
 })
 export class CoachPackModule {}
