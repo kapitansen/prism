@@ -2,12 +2,8 @@ import { ConfigService } from '@nestjs/config'
 import { hash } from '@node-rs/argon2'
 import { EntryType, PrismaClient } from '@prisma/client'
 
-import {
-  DEFAULT_ANALYSIS_MD,
-  DEFAULT_SOURCE_NOTE,
-  DEFAULT_VOICE_MD,
-} from '../src/coach-pack/coach-pack.defaults'
 import { EncryptionService } from '../src/crypto/encryption.service'
+import { ensureBaseline } from './starter'
 
 const prisma = new PrismaClient()
 // Encrypt seeded *_enc fields with the same service the app uses
@@ -19,40 +15,6 @@ const encryption = new EncryptionService({
 // Dev-only seeded accounts (no signup flow yet). These passwords are dev
 // credentials for local login, not production secrets.
 const USERS = [{ email: 'demo@prism.local', password: '12345', isDemo: true }]
-
-// Starter metric set: 4 manual day-chips (1–10) + two extracted-from-text.
-const METRICS = [
-  { key: 'mood', name: 'Mood', scaleMin: 1, scaleMax: 5, source: 'manual' },
-  {
-    key: 'sleep_quality',
-    name: 'Sleep quality',
-    scaleMin: 1,
-    scaleMax: 5,
-    source: 'manual',
-  },
-  {
-    key: 'energy',
-    name: 'Energy',
-    scaleMin: 1,
-    scaleMax: 5,
-    source: 'manual',
-  },
-  {
-    key: 'activity',
-    name: 'Activity',
-    scaleMin: 1,
-    scaleMax: 5,
-    source: 'manual',
-  },
-  { key: 'sleep_hours', name: 'Sleep hours', unit: 'h', source: 'extracted' },
-  {
-    key: 'anxiety',
-    name: 'Anxiety',
-    scaleMin: 1,
-    scaleMax: 5,
-    source: 'extracted',
-  },
-] as const
 
 // Demo content so the Journal and People screens aren't empty in dev.
 interface DemoEntry {
@@ -152,33 +114,8 @@ async function main() {
       },
     })
 
-    for (const m of METRICS) {
-      const { key, ...attrs } = m
-      await prisma.metricDefinition.upsert({
-        where: { userId_key: { userId: user.id, key } },
-        update: attrs, // keep definitions in sync with this file on re-seed
-        create: { userId: user.id, key, ...attrs },
-      })
-    }
-
-    // Default coach pack (AI config) — seed once, then point settings at it.
-    if (
-      (await prisma.coachPackVersion.count({ where: { userId: user.id } })) ===
-      0
-    ) {
-      const pack = await prisma.coachPackVersion.create({
-        data: {
-          userId: user.id,
-          analysisMd: DEFAULT_ANALYSIS_MD,
-          voiceMd: DEFAULT_VOICE_MD,
-          sourceNote: DEFAULT_SOURCE_NOTE,
-        },
-      })
-      await prisma.userSettings.update({
-        where: { userId: user.id },
-        data: { activeCoachPackVersionId: pack.id },
-      })
-    }
+    // Starter metric set + default coach pack (shared with the import script).
+    await ensureBaseline(prisma, user.id)
 
     // Demo data — only for the demo account, and only when it's empty
     // (idempotent; never clobbers real data, never seeds real users).

@@ -21,6 +21,11 @@ apps/api/prisma/*.d.ts
 # OS files
 .DS_Store
 
+# Personal data and import script
+apps/api/prisma/import.ts
+personal/
+backups/
+
 # Personal, non-committed notes (mentoring rules etc.)
 CLAUDE.local.md
 
