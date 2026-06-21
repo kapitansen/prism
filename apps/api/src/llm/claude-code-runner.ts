@@ -3,13 +3,16 @@ import { tmpdir } from 'node:os'
 
 import { Injectable, Logger } from '@nestjs/common'
 
-import type { LlmRunner } from './llm-runner.port'
+import type { LlmResult, LlmRunner } from './llm-runner.port'
 
 // The claude --output-format json envelope (only the fields we read).
 interface ClaudeEnvelope {
   is_error?: boolean
   subtype?: string
   result?: string
+  duration_ms?: number
+  total_cost_usd?: number
+  usage?: { input_tokens?: number; output_tokens?: number }
 }
 
 // Runs the analysis prompt through the local Claude Code CLI in headless mode
@@ -24,7 +27,7 @@ export class ClaudeCodeRunner implements LlmRunner {
   private readonly model = process.env.CLAUDE_MODEL // optional; CLI default if unset
   private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 180_000)
 
-  async run(prompt: string): Promise<string> {
+  async run(prompt: string): Promise<LlmResult> {
     const args = ['-p', '--output-format', 'json']
     if (this.model) args.push('--model', this.model)
 
@@ -42,7 +45,15 @@ export class ClaudeCodeRunner implements LlmRunner {
     ) {
       throw new Error(`claude run failed: ${stdout.slice(0, 300)}`)
     }
-    return stripCodeFences(envelope.result)
+    return {
+      text: stripCodeFences(envelope.result),
+      usage: {
+        inputTokens: envelope.usage?.input_tokens,
+        outputTokens: envelope.usage?.output_tokens,
+        costUsd: envelope.total_cost_usd,
+        durationMs: envelope.duration_ms,
+      },
+    }
   }
 
   // Spawn the CLI, write the prompt to stdin, collect stdout. Rejects on a

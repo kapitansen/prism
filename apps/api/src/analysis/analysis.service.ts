@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common'
 import {
@@ -19,6 +20,7 @@ import { LLM_RUNNER, type LlmRunner } from '../llm/llm-runner.port'
 import { PrismaService } from '../prisma/prisma.service'
 import { ParseDayDto } from './dto/parse-day.dto'
 import { mentioned } from './entity-match'
+import { writeParseLog } from './parse-log'
 import { buildParsePrompt, type ParseContext } from './prompt'
 import { loadSkills } from './skills'
 
@@ -32,6 +34,8 @@ interface AnalysisState {
 
 @Injectable()
 export class AnalysisService {
+  private readonly logger = new Logger(AnalysisService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
@@ -65,15 +69,19 @@ export class AnalysisService {
     ])
     const prompt = buildParsePrompt({
       skills: loadSkills(),
-      coach: { analysisMd: coach.analysisMd, voiceMd: coach.voiceMd },
-      metricDefs: metricDefs.map((d) => ({
-        key: d.key,
-        name: d.name,
-        unit: d.unit,
-        scaleMin: d.scaleMin,
-        scaleMax: d.scaleMax,
-        source: d.source,
-      })),
+      coach: { analysisMd: coach.analysisMd },
+      // Only extracted-type metrics are extraction targets; manual ones are the
+      // user's own taps (chips), the LLM shouldn't guess them from text.
+      metricDefs: metricDefs
+        .filter((d) => d.source === 'extracted')
+        .map((d) => ({
+          key: d.key,
+          name: d.name,
+          unit: d.unit,
+          scaleMin: d.scaleMin,
+          scaleMax: d.scaleMax,
+          source: d.source,
+        })),
       body,
       chips: values.map((v) => ({
         key: v.metricKey,
@@ -83,7 +91,39 @@ export class AnalysisService {
       context,
     })
 
-    const response = this.validate(await this.llm.run(prompt))
+    const result = await this.llm.run(prompt)
+    const raw = result.text
+    const round = state.answeredQa.length
+    const runner = process.env.LLM_RUNNER ?? 'claude-code'
+    const logBase = {
+      entryId: entry.id,
+      occurredOn: dayIso(entry.occurredOn),
+      round,
+      runner,
+      prompt,
+      raw,
+      usage: result.usage,
+    }
+
+    let response: ParseResponse
+    try {
+      response = this.validate(raw)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'invalid output'
+      const file = writeParseLog({ ...logBase, outcome: `ERROR: ${msg}` })
+      this.logger.warn(`parse round ${round} FAILED${file ? ` → ${file}` : ''}`)
+      throw err
+    }
+
+    const file = writeParseLog({ ...logBase, outcome: response.status })
+    const u = result.usage
+    this.logger.log(
+      `parse round ${round} → ${response.status}` +
+        (u
+          ? ` (in=${u.inputTokens} out=${u.outputTokens}, ${u.durationMs != null ? `${(u.durationMs / 1000).toFixed(1)}s` : '?'})`
+          : '') +
+        (file ? ` → ${file}` : ''),
+    )
     state.last = response
     await this.saveState(entry.id, state)
     return response
@@ -114,7 +154,12 @@ export class AnalysisService {
         ? (JSON.parse(this.encryption.decrypt(e.aliasesEnc)) as string[])
         : [],
       type: e.type,
-      digest: e.digestEnc ? this.encryption.decrypt(e.digestEnc) : null,
+      // AI-maintained dossier, falling back to the human-written description.
+      summary: e.digestEnc
+        ? this.encryption.decrypt(e.digestEnc)
+        : e.descriptionEnc
+          ? this.encryption.decrypt(e.descriptionEnc)
+          : null,
     }))
 
     return {
@@ -125,8 +170,8 @@ export class AnalysisService {
         type,
       })),
       dossiers: decrypted
-        .filter((e) => e.digest && mentioned(body, [e.name, ...e.aliases]))
-        .map((e) => ({ name: e.name, digest: e.digest as string })),
+        .filter((e) => e.summary && mentioned(body, [e.name, ...e.aliases]))
+        .map((e) => ({ name: e.name, summary: e.summary as string })),
       cbtCards: cbtCards.map((c) => ({
         id: c.id,
         title: this.encryption.decrypt(c.titleEnc),

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import type { ParseResponse } from '@prism/shared'
 
-import { LlmRunner } from './llm-runner.port'
+import { LlmResult, LlmRunner } from './llm-runner.port'
 
 // Deterministic stand-in for a real LLM: lets us build and test the whole
 // pipeline without cost/flakiness. Tests enqueue canned responses; otherwise it
@@ -14,9 +14,9 @@ export class FakeRunner implements LlmRunner {
     this.queue.push(...responses)
   }
 
-  run(_prompt: string): Promise<string> {
+  run(_prompt: string): Promise<LlmResult> {
     const next = this.queue.shift() ?? this.defaultComplete()
-    return Promise.resolve(JSON.stringify(next))
+    return Promise.resolve({ text: JSON.stringify(next) })
   }
 
   private defaultComplete(): ParseResponse {

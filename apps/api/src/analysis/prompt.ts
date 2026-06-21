@@ -14,24 +14,24 @@ interface MetricDef {
 export interface ParseContext {
   // All of the user's entities — the candidate list for setting existingId.
   entities: { id: string; name: string; aliases: string[]; type: string }[]
-  // Dossiers of entities likely mentioned today (loose name match).
-  dossiers: { name: string; digest: string }[]
+  // Summaries of entities likely mentioned today (AI digest, else human note).
+  dossiers: { name: string; summary: string }[]
   // CBT cards (trigger thoughts), so the LLM can raise cbtFlags by id.
   cbtCards: { id: string; title: string }[]
-  // The few preceding days, for continuity.
+  // The few preceding days (AI summary, else raw text), for continuity.
   recentDays: { date: string; text: string }[]
 }
 
 // Assembles the full parse prompt in layers (spec §5.2):
 //   1. methodology  — skills/core.md + entry-analyst.md (fixed, in repo)
-//   2. coach pack   — analysis_md (per-user analysis tuning)
-//   3. voice        — voice_md (tone for the summary)
-//   4. data         — the day's text, manual chips, answered clarifications,
-//                     and the catalog of valid metric keys
-//   5. context      — DB-pushed entities, dossiers, CBT cards, recent days
+//   2. coach pack   — analysis_md (per-user analysis tuning; voice is NOT here,
+//                     it belongs to the read-time companion, not extraction)
+//   3. data         — the day's text, manual chips, answered clarifications,
+//                     and the catalog of extractable metric keys
+//   4. context      — DB-pushed entities, dossiers, CBT cards, recent days
 export function buildParsePrompt(input: {
   skills: Skills
-  coach: { analysisMd: string; voiceMd: string }
+  coach: { analysisMd: string }
   metricDefs: MetricDef[]
   body: string
   chips: { key: string; value: number }[]
@@ -51,11 +51,10 @@ export function buildParsePrompt(input: {
   return [
     section('МЕТОДИКА', `${input.skills.core}\n\n${input.skills.entryAnalyst}`),
     section('НАСТРОЙКИ КОУЧА — РАЗБОР', input.coach.analysisMd),
-    section('ГОЛОС КОУЧА', input.coach.voiceMd),
     section(
       'ДАННЫЕ ДНЯ',
       [
-        `Доступные метрики (используй только эти ключи):\n${metricList}`,
+        `Метрики, доступные для извлечения из текста (только эти ключи):\n${metricList}`,
         '',
         `Метрики, уже отмеченные пользователем (чипы): ${chips}`,
         'Их повторно извлекать не нужно.',
@@ -81,14 +80,18 @@ function buildContextBlock(ctx: ParseContext): string {
         })
         .join('\n')
     : '—'
+  // Profiles/days can contain arbitrary markdown, so wrap each in explicit
+  // start/end fences — the LLM can always tell where one ends.
   const dossiers = ctx.dossiers.length
-    ? ctx.dossiers.map((d) => `### ${d.name}\n${d.digest.trim()}`).join('\n\n')
+    ? ctx.dossiers
+        .map((d) => fence(`ПРОФИЛЬ: ${d.name}`, d.summary))
+        .join('\n\n')
     : '—'
   const cards = ctx.cbtCards.length
     ? ctx.cbtCards.map((c) => `- [${c.id}] ${c.title}`).join('\n')
     : '—'
   const recent = ctx.recentDays.length
-    ? ctx.recentDays.map((r) => `- ${r.date}: ${r.text}`).join('\n')
+    ? ctx.recentDays.map((r) => fence(`ДЕНЬ ${r.date}`, r.text)).join('\n\n')
     : '—'
 
   return [
@@ -100,6 +103,11 @@ function buildContextBlock(ctx: ParseContext): string {
     '',
     `Недавние записи:\n${recent}`,
   ].join('\n')
+}
+
+// An explicitly delimited block so nested markdown can't blur its boundaries.
+function fence(label: string, body: string): string {
+  return `===== НАЧАЛО · ${label} =====\n${body.trim()}\n===== КОНЕЦ · ${label} =====`
 }
 
 function describeMetric(d: MetricDef): string {
