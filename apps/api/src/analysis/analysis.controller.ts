@@ -10,33 +10,33 @@ import {
 import { AuthUser } from '../auth/auth-user.interface'
 import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { AnalysisService } from './analysis.service'
 import { ParseDayDto } from './dto/parse-day.dto'
-import { IngestionService } from './ingestion.service'
 
 @UseGuards(JwtAuthGuard)
 @Controller('entries')
-export class IngestionController {
-  constructor(private readonly ingestion: IngestionService) {}
+export class AnalysisController {
+  constructor(private readonly analysis: AnalysisService) {}
 
-  // Interactive day parse — returns a proposal (clarify questions or the full
-  // extraction). The client loops rounds (sending answers) and commits later.
+  // Interactive day parse — one round. Returns clarify questions or the full
+  // extraction. Rounds are stored server-side; the client sends only new answers.
   @Post(':id/parse')
   parse(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ParseDayDto,
   ) {
-    return this.ingestion.parse(user.id, id, dto)
+    return this.analysis.parse(user.id, id, dto)
   }
 
-  // Persist a confirmed (user-edited) extraction. Body is validated by zod in
-  // the service (the extraction contract), so it's typed loosely here.
+  // Persist a confirmed (user-edited) extraction. Body validated by zod in the
+  // service (the extraction contract), so it's typed loosely here.
   @Post(':id/commit')
   commit(
     @CurrentUser() user: AuthUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: unknown,
   ) {
-    return this.ingestion.commit(user.id, id, body)
+    return this.analysis.commit(user.id, id, body)
   }
 }

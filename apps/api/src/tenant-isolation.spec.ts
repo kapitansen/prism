@@ -473,6 +473,36 @@ describe('Tenant isolation (API)', () => {
     expect(res.body.clarifyQuestions[0].question).toBe('как спал?')
   })
 
+  it('ingestion: multi-round parse — answer, then complete (server-stored)', async () => {
+    const id = await createEntryAs(tokenA)
+    app.get(FakeRunner).enqueue(
+      {
+        status: 'needs_clarification',
+        clarifyQuestions: [{ question: 'как спал?' }],
+      },
+      {
+        status: 'complete',
+        summary: 'итог',
+        metrics: [],
+        entities: [],
+        intents: [],
+        cbtFlags: [],
+      },
+    )
+    const r1 = await http()
+      .post(`/entries/${id}/parse`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({})
+      .expect(201)
+    expect(r1.body.status).toBe('needs_clarification')
+    const r2 = await http()
+      .post(`/entries/${id}/parse`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ answers: [{ question: 'как спал?', answer: 'плохо' }] })
+      .expect(201)
+    expect(r2.body.status).toBe('complete')
+  })
+
   it('ingestion: parse requires a token (401)', async () => {
     await http()
       .post('/entries/00000000-0000-0000-0000-000000000000/parse')

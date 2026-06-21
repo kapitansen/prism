@@ -75,6 +75,9 @@ model Entry {
   titleEnc     String?      @map("title_enc")
   bodyEnc      String       @map("body_enc")
   summaryEnc   String?      @map("summary_enc")
+  // Encrypted JSON of the in-progress/last analysis (Q&A rounds + proposal);
+  // scratch until ingest_status = parsed, then kept as history.
+  analysisEnc  String?      @map("analysis_enc")
   occurredOn   DateTime     @map("occurred_on") @db.Date
   occurredTo   DateTime?    @map("occurred_to") @db.Date
   ingestStatus IngestStatus @default(draft) @map("ingest_status")

@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common'
 
 import { AuthModule } from '../auth/auth.module'
-import { IngestionController } from './ingestion.controller'
-import { IngestionService } from './ingestion.service'
+import { AnalysisController } from './analysis.controller'
+import { AnalysisService } from './analysis.service'
 
 // Prisma, Encryption and the LLM runner are global; only the auth guard needs
 // importing here.
 @Module({
   imports: [AuthModule],
-  controllers: [IngestionController],
-  providers: [IngestionService],
+  controllers: [AnalysisController],
+  providers: [AnalysisService],
 })
-export class IngestionModule {}
+export class AnalysisModule {}

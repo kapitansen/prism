@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 
+import { AnalysisModule } from './analysis/analysis.module'
 import { AppController } from './app.controller'
 import { AuthModule } from './auth/auth.module'
 import { CbtCardsModule } from './cbt-cards/cbt-cards.module'
@@ -8,7 +9,6 @@ import { CoachPackModule } from './coach-pack/coach-pack.module'
 import { CryptoModule } from './crypto/crypto.module'
 import { EntitiesModule } from './entities/entities.module'
 import { EntriesModule } from './entries/entries.module'
-import { IngestionModule } from './ingestion/ingestion.module'
 import { LlmModule } from './llm/llm.module'
 import { MetricsModule } from './metrics/metrics.module'
 import { PrismaModule } from './prisma/prisma.module'
@@ -21,11 +21,11 @@ import { SettingsModule } from './settings/settings.module'
     CryptoModule,
     PrismaModule,
     AuthModule,
+    AnalysisModule,
     CbtCardsModule,
     CoachPackModule,
     EntriesModule,
     EntitiesModule,
-    IngestionModule,
     LlmModule,
     MetricsModule,
     SettingsModule,
