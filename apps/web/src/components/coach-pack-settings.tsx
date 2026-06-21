@@ -23,7 +23,7 @@ export function CoachPackSettings() {
   })
 
   return (
-    <section className="flex max-w-md flex-col gap-3">
+    <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium">{t('settings.ai.title')}</span>
         <span className="text-xs text-muted-foreground">
@@ -84,14 +84,14 @@ function CoachPackEditor({ active }: { active: CoachPackVersion }) {
         <Textarea
           value={voiceMd}
           onChange={(e) => setVoiceMd(e.target.value)}
-          rows={5}
+          rows={10}
         />
       </Field>
       <Field label={t('settings.ai.analysis')}>
         <Textarea
           value={analysisMd}
           onChange={(e) => setAnalysisMd(e.target.value)}
-          rows={5}
+          rows={10}
         />
       </Field>
       <Field label={t('settings.ai.thresholds')}>
