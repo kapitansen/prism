@@ -3,6 +3,7 @@ import { enUS, ru } from 'date-fns/locale'
 import {
   CalendarCheck,
   CalendarDays,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
   X,
@@ -54,6 +55,17 @@ function shiftIso(iso: string, deltaDays: number) {
   return dateToIso(d)
 }
 
+// Inclusive list of ISO days from..to (capped; ISO strings compare by date).
+function daysBetween(from: string, to: string): string[] {
+  const out: string[] = []
+  let cur = from
+  for (let i = 0; i < 366 && cur <= to; i++) {
+    out.push(cur)
+    cur = shiftIso(cur, 1)
+  }
+  return out
+}
+
 // The whole day-input block: date selector + metric chips + autosaving day
 // text. Self-contained (own date state + queries), so it can be dropped on any
 // screen — currently Today and Journal (DRY).
@@ -67,15 +79,38 @@ export function DayInputPanel({
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const todayStr = todayIso()
-  const [date, setDate] = useState(initialDate ?? todayStr)
+  const [date, setDate] = useState(initialDate ?? todayStr) // the day / range start
+  const [rangeTo, setRangeTo] = useState<string | null>(null)
+  const [rangeMode, setRangeMode] = useState(false)
   const [calOpen, setCalOpen] = useState(false)
-  const isToday = date === todayStr
-  const dateLabel = isoToDate(date).toLocaleDateString(i18n.language, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+
+  const isRange = rangeMode && rangeTo !== null && rangeTo !== date
+  const days = rangeMode && rangeTo ? daysBetween(date, rangeTo) : [date]
+  const isToday = date === todayStr && !rangeMode
   const calendarLocale = i18n.language.startsWith('ru') ? ru : enUS
+  const fmt = (iso: string) =>
+    isoToDate(iso).toLocaleDateString(i18n.language, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  const dateLabel = isRange ? `${fmt(date)} – ${fmt(rangeTo)}` : fmt(date)
+
+  // Arrows / "today" always act on a single day and leave range mode.
+  const pickSingle = (iso: string) => {
+    setDate(iso)
+    setRangeTo(null)
+    setRangeMode(false)
+  }
+  const toggleRange = () => {
+    if (rangeMode) {
+      setRangeMode(false)
+      setRangeTo(null)
+    } else {
+      setRangeMode(true)
+      setRangeTo((prev) => prev ?? date) // default end = start (one day)
+    }
+  }
 
   const defsQuery = useQuery({
     queryKey: ['metric-definitions'],
@@ -94,10 +129,14 @@ export function DayInputPanel({
     },
   })
 
+  // A chip writes the same value to every day of the range (one day if single).
   const record = useMutation({
-    mutationFn: recordMetricValue,
+    mutationFn: ({ metricKey, value }: { metricKey: string; value: number }) =>
+      Promise.all(
+        days.map((d) => recordMetricValue({ metricKey, value, occurredOn: d })),
+      ),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['metric-values', date] }),
+      queryClient.invalidateQueries({ queryKey: ['metric-values'] }),
   })
 
   // Chips only for manual, scaled metrics; extracted ones (sleep_hours,
@@ -128,8 +167,17 @@ export function DayInputPanel({
           <X className="size-4" />
         </button>
       )}
-      {/* Date selector: calendar · today · prev · next */}
+      {/* Date selector: range toggle · calendar · today · prev · next */}
       <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          variant={rangeMode ? 'default' : 'outline'}
+          size="icon"
+          aria-pressed={rangeMode}
+          aria-label={t('today.rangeMode')}
+          onClick={toggleRange}
+        >
+          <CalendarRange />
+        </Button>
         <Popover open={calOpen} onOpenChange={setCalOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="gap-2 text-base">
@@ -138,19 +186,57 @@ export function DayInputPanel({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              locale={calendarLocale}
-              selected={isoToDate(date)}
-              defaultMonth={isoToDate(date)}
-              disabled={{ after: isoToDate(todayStr) }}
-              onSelect={(d) => {
-                if (!d) return
-                setDate(dateToIso(d))
-                setCalOpen(false)
-              }}
-              autoFocus
-            />
+            {rangeMode ? (
+              // Two independent single-date pickers — no range-calendar guessing
+              <div className="flex flex-col gap-3 p-3 sm:flex-row">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('today.dateFrom')}
+                  </span>
+                  <Calendar
+                    mode="single"
+                    locale={calendarLocale}
+                    selected={isoToDate(date)}
+                    defaultMonth={isoToDate(date)}
+                    disabled={{
+                      after: rangeTo ? isoToDate(rangeTo) : isoToDate(todayStr),
+                    }}
+                    onSelect={(d) => d && setDate(dateToIso(d))}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('today.dateTo')}
+                  </span>
+                  <Calendar
+                    mode="single"
+                    locale={calendarLocale}
+                    selected={rangeTo ? isoToDate(rangeTo) : undefined}
+                    defaultMonth={isoToDate(rangeTo ?? date)}
+                    disabled={{
+                      before: isoToDate(date),
+                      after: isoToDate(todayStr),
+                    }}
+                    onSelect={(d) => d && setRangeTo(dateToIso(d))}
+                  />
+                </div>
+              </div>
+            ) : (
+              <Calendar
+                mode="single"
+                locale={calendarLocale}
+                selected={isoToDate(date)}
+                defaultMonth={isoToDate(date)}
+                disabled={{ after: isoToDate(todayStr) }}
+                onSelect={(d) => {
+                  if (!d) return
+                  setDate(dateToIso(d))
+                  setCalOpen(false)
+                }}
+                autoFocus
+              />
+            )}
           </PopoverContent>
         </Popover>
         <Button
@@ -158,7 +244,7 @@ export function DayInputPanel({
           size="icon"
           aria-label={t('today.jumpToday')}
           disabled={isToday}
-          onClick={() => setDate(todayStr)}
+          onClick={() => pickSingle(todayStr)}
         >
           <CalendarCheck />
         </Button>
@@ -166,7 +252,7 @@ export function DayInputPanel({
           variant="outline"
           size="icon"
           aria-label={t('today.prevDay')}
-          onClick={() => setDate((d) => shiftIso(d, -1))}
+          onClick={() => pickSingle(shiftIso(date, -1))}
         >
           <ChevronLeft />
         </Button>
@@ -174,8 +260,8 @@ export function DayInputPanel({
           variant="outline"
           size="icon"
           aria-label={t('today.nextDay')}
-          disabled={isToday}
-          onClick={() => setDate((d) => shiftIso(d, 1))}
+          disabled={date === todayStr}
+          onClick={() => pickSingle(shiftIso(date, 1))}
         >
           <ChevronRight />
         </Button>
@@ -195,9 +281,7 @@ export function DayInputPanel({
             <ChipGroup
               ariaLabel={label(d)}
               value={valueFor(d.key)}
-              onChange={(value) =>
-                record.mutate({ metricKey: d.key, value, occurredOn: date })
-              }
+              onChange={(value) => record.mutate({ metricKey: d.key, value })}
               options={Array.from(
                 { length: d.scaleMax - d.scaleMin + 1 },
                 (_, i) => ({
@@ -219,6 +303,7 @@ export function DayInputPanel({
           <DayEditor
             key={date}
             date={date}
+            to={isRange ? rangeTo : null}
             initialId={dayQuery.data?.id ?? null}
             initialText={dayQuery.data?.body ?? ''}
             initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
@@ -233,11 +318,13 @@ const AUTOSAVE_MS = 800
 
 function DayEditor({
   date,
+  to,
   initialId,
   initialText,
   initialStatus,
 }: {
   date: string
+  to: string | null
   initialId: string | null
   initialText: string
   initialStatus: string
@@ -284,6 +371,7 @@ function DayEditor({
           type: 'daily',
           body: value,
           occurredOn: date,
+          occurredTo: to ?? undefined,
         })
         entryId.current = saved.id
       }
