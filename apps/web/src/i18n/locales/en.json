@@ -29,9 +29,6 @@
     "prevDay": "Previous day",
     "nextDay": "Next day",
     "jumpToday": "Today",
-    "dateMode": "Date mode",
-    "dateSingle": "Single day",
-    "dateRange": "Range",
     "dayTitle": "Day entry",
     "dayPlaceholder": "What happened today?",
     "saving": "Saving…",
@@ -121,8 +118,6 @@
       "hint": "Voice and analysis rules. Saving creates a new version (older ones stay for rollback).",
       "voice": "Coach voice",
       "analysis": "Day analysis",
-      "thresholds": "Thresholds (JSON)",
-      "thresholdsInvalid": "Invalid JSON",
       "history": "Version history",
       "active": "Active",
       "activate": "Make active"
