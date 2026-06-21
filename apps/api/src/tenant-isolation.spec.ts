@@ -370,19 +370,6 @@ describe('Tenant isolation (API)', () => {
     expect(emptyDay.body).toHaveLength(0)
   })
 
-  it("entries: finalize closes a draft (→ pending); B cannot finalize A's", async () => {
-    const id = await createEntryAs(tokenA) // created as draft
-    await http()
-      .post(`/entries/${id}/finalize`)
-      .set('Authorization', `Bearer ${tokenB}`)
-      .expect(404)
-    const res = await http()
-      .post(`/entries/${id}/finalize`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .expect(201)
-    expect(res.body.ingestStatus).toBe('pending')
-  })
-
   it('coach-pack: GET auto-seeds a default active version', async () => {
     const res = await http()
       .get('/coach-pack')

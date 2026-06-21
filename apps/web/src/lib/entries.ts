@@ -43,11 +43,6 @@ export function updateEntry(
   return api.patch<EntryListItem>(`/entries/${id}`, patch)
 }
 
-// "Close the day": draft → pending (finalize for parsing).
-export function finalizeEntry(id: string) {
-  return api.post<EntryListItem>(`/entries/${id}/finalize`)
-}
-
 export function deleteEntry(id: string) {
   return api.delete<{ deleted: true }>(`/entries/${id}`)
 }

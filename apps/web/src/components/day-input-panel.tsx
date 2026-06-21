@@ -1,3 +1,4 @@
+import type { ParseResponse } from '@prism/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { enUS, ru } from 'date-fns/locale'
 import {
@@ -19,12 +20,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  createEntry,
-  fetchEntries,
-  finalizeEntry,
-  updateEntry,
-} from '@/lib/entries'
+import { commitEntry, parseEntry } from '@/lib/analysis'
+import { createEntry, fetchEntries, updateEntry } from '@/lib/entries'
 import {
   fetchMetricDefinitions,
   fetchMetricValues,
@@ -316,6 +313,9 @@ export function DayInputPanel({
 
 const AUTOSAVE_MS = 800
 
+const ANALYSIS_FIELD =
+  'focus-visible:ring-ring/50 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]'
+
 function DayEditor({
   date,
   to,
@@ -332,28 +332,29 @@ function DayEditor({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [text, setText] = useState(initialText)
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
-  // Day-level lifecycle (ingest_status). 'draft' = still open for the button.
-  const [dayStatus, setDayStatus] = useState(initialStatus)
-  const closed = dayStatus !== 'draft'
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>(
+    'idle',
+  )
+  const [parsed, setParsed] = useState(initialStatus === 'parsed')
+  // The current parse proposal (null = not analysing).
+  const [proposal, setProposal] = useState<ParseResponse | null>(null)
+  const [answers, setAnswers] = useState<string[]>([]) // current round inputs
+  const [summary, setSummary] = useState('') // editable in review
+  const [busy, setBusy] = useState(false)
 
-  // Refs, not state: the autosave closure must read live values without
-  // re-rendering, and we never render these directly.
   const entryId = useRef(initialId)
   const inFlight = useRef(false)
   const pending = useRef<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // The last persisted text — state (not a ref) so `dirty` recomputes on save.
   const [lastSaved, setLastSaved] = useState(initialText)
+  const dirty = text !== lastSaved
 
-  // After any write, refresh both caches the feed/panel read from.
   function syncCaches(saved: Awaited<ReturnType<typeof updateEntry>>) {
     queryClient.setQueryData(['day-entry', date], saved)
     void queryClient.invalidateQueries({ queryKey: ['entries'] })
   }
 
-  // Serialize saves: create-or-update, and coalesce edits made mid-request so
-  // a fast typist can't spawn two `daily` drafts for the same day.
+  // Serialize saves: create-or-update, coalescing edits made mid-request.
   async function flush(value: string) {
     if (!value.trim()) return
     if (inFlight.current) {
@@ -361,7 +362,7 @@ function DayEditor({
       return
     }
     inFlight.current = true
-    setStatus('saving')
+    setSaveStatus('saving')
     try {
       let saved
       if (entryId.current) {
@@ -377,7 +378,7 @@ function DayEditor({
       }
       syncCaches(saved)
       setLastSaved(value)
-      setStatus('saved')
+      setSaveStatus('saved')
     } finally {
       inFlight.current = false
       const next = pending.current
@@ -388,7 +389,7 @@ function DayEditor({
 
   function onChange(value: string) {
     setText(value)
-    setStatus('idle')
+    setSaveStatus('idle')
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => void flush(value), AUTOSAVE_MS)
   }
@@ -398,17 +399,56 @@ function DayEditor({
     await flush(text)
   }
 
-  async function closeDay() {
-    await saveNow() // make sure the latest text is saved (and entry created)
+  // One parse round: ensure the text is saved, then ask the server. First call
+  // has no answers; later rounds send answers to the previous questions.
+  async function runRound(
+    roundAnswers?: { question: string; answer: string }[],
+  ) {
+    await saveNow()
     if (!entryId.current) return
-    const updated = await finalizeEntry(entryId.current)
-    syncCaches(updated)
-    setDayStatus(updated.ingestStatus)
+    setBusy(true)
+    try {
+      const res = await parseEntry(
+        entryId.current,
+        roundAnswers ? { answers: roundAnswers } : {},
+      )
+      setProposal(res)
+      if (res.status === 'complete') setSummary(res.summary)
+      else setAnswers(res.clarifyQuestions.map(() => ''))
+    } finally {
+      setBusy(false)
+    }
   }
 
-  // "Save" appears whenever there are unsaved edits (works for a closed day
-  // too); otherwise finalize an open day, or show the "closed" label.
-  const dirty = text !== lastSaved
+  function submitAnswers() {
+    if (proposal?.status !== 'needs_clarification') return
+    void runRound(
+      proposal.clarifyQuestions.map((q, i) => ({
+        question: q.question,
+        answer: answers[i] ?? '',
+      })),
+    )
+  }
+
+  async function commit() {
+    if (!entryId.current || proposal?.status !== 'complete') return
+    setBusy(true)
+    try {
+      await commitEntry(entryId.current, {
+        summary,
+        metrics: proposal.metrics,
+        entities: proposal.entities,
+        intents: proposal.intents,
+        cbtFlags: proposal.cbtFlags,
+      })
+      setParsed(true)
+      setProposal(null)
+      void queryClient.invalidateQueries({ queryKey: ['entries'] })
+      void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   useEffect(
     () => () => {
@@ -421,9 +461,9 @@ function DayEditor({
     <>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">{t('today.dayTitle')}</h2>
-        {status !== 'idle' && (
+        {saveStatus !== 'idle' && (
           <span className="text-xs text-muted-foreground">
-            {status === 'saving' ? t('today.saving') : t('today.saved')}
+            {saveStatus === 'saving' ? t('today.saving') : t('today.saved')}
           </span>
         )}
       </div>
@@ -432,31 +472,114 @@ function DayEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={t('today.dayPlaceholder')}
         rows={6}
-        className="focus-visible:ring-ring/50 min-h-32 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+        className={`min-h-32 ${ANALYSIS_FIELD}`}
       />
-      <div className="flex justify-end">
-        {dirty ? (
-          <Button
-            size="sm"
-            disabled={!text.trim()}
-            onClick={() => void saveNow()}
-          >
-            {t('today.save')}
-          </Button>
-        ) : closed ? (
-          <span className="text-sm text-muted-foreground">
-            {t('today.dayClosed')}
-          </span>
-        ) : (
-          <Button
-            size="sm"
-            disabled={!text.trim()}
-            onClick={() => void closeDay()}
-          >
-            {t('today.closeDay')}
-          </Button>
-        )}
-      </div>
+
+      {proposal?.status === 'needs_clarification' ? (
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+          <span className="text-sm font-medium">{t('today.clarifyTitle')}</span>
+          {proposal.clarifyQuestions.map((q, i) => (
+            <label key={i} className="flex flex-col gap-1">
+              <span className="text-sm">{q.question}</span>
+              <textarea
+                value={answers[i] ?? ''}
+                onChange={(e) =>
+                  setAnswers((a) =>
+                    a.map((x, j) => (j === i ? e.target.value : x)),
+                  )
+                }
+                rows={2}
+                className={ANALYSIS_FIELD}
+              />
+            </label>
+          ))}
+          <div className="flex gap-2">
+            <Button size="sm" disabled={busy} onClick={submitAnswers}>
+              {t('today.answer')}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => setProposal(null)}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      ) : proposal?.status === 'complete' ? (
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+          <span className="text-sm font-medium">{t('today.reviewTitle')}</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">{t('today.summaryLabel')}</span>
+            <textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              rows={4}
+              className={ANALYSIS_FIELD}
+            />
+          </label>
+          {proposal.metrics.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {proposal.metrics.map((m) => `${m.key}=${m.value}`).join(', ')}
+            </p>
+          )}
+          {proposal.entities.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {proposal.entities
+                .map((e) => (e.existingId ? e.name : `${e.name} (новый)`))
+                .join(', ')}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              disabled={busy || !summary.trim()}
+              onClick={() => void commit()}
+            >
+              {t('today.commit')}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => setProposal(null)}
+            >
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-2">
+          {parsed && (
+            <span className="text-sm text-muted-foreground">
+              {t('today.parsed')}
+            </span>
+          )}
+          {dirty ? (
+            <Button
+              size="sm"
+              disabled={!text.trim()}
+              onClick={() => void saveNow()}
+            >
+              {t('today.save')}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant={parsed ? 'outline' : 'default'}
+              disabled={!text.trim() || busy}
+              onClick={() => void runRound()}
+            >
+              {busy
+                ? t('today.parsing')
+                : parsed
+                  ? t('today.reparse')
+                  : t('today.closeDay')}
+            </Button>
+          )}
+        </div>
+      )}
     </>
   )
 }

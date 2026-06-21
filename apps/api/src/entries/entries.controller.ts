@@ -51,14 +51,6 @@ export class EntriesController {
     return this.entries.update(user.id, id, dto)
   }
 
-  @Post(':id/finalize')
-  finalize(
-    @CurrentUser() user: AuthUser,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.entries.finalize(user.id, id)
-  }
-
   @Delete(':id')
   remove(
     @CurrentUser() user: AuthUser,

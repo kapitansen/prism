@@ -68,23 +68,6 @@ export class EntriesService {
     return this.findOne(userId, id)
   }
 
-  // "Close the day": draft → pending (finalized, queued for parsing). The
-  // parse itself runs later via the ingestion pipeline. Idempotent for an
-  // already-finalized entry; a missing/foreign id is a 404.
-  async finalize(userId: string, id: string) {
-    const entry = await this.prisma.entry.findFirst({ where: { id, userId } })
-    if (!entry) {
-      throw new NotFoundException('Entry not found')
-    }
-    if (entry.ingestStatus === 'draft') {
-      await this.prisma.entry.update({
-        where: { id },
-        data: { ingestStatus: 'pending' },
-      })
-    }
-    return this.findOne(userId, id)
-  }
-
   async remove(userId: string, id: string) {
     const { count } = await this.prisma.entry.deleteMany({
       where: { id, userId },
