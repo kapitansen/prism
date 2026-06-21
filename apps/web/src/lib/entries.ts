@@ -36,10 +36,16 @@ export function createEntry(input: {
   return api.post<EntryListItem>('/entries', input)
 }
 
-export function updateEntry(
-  id: string,
-  patch: { body?: string; title?: string },
-) {
+export interface UpdateEntryInput {
+  body?: string
+  title?: string
+  summary?: string
+  type?: string
+  occurredOn?: string
+  occurredTo?: string
+}
+
+export function updateEntry(id: string, patch: UpdateEntryInput) {
   return api.patch<EntryListItem>(`/entries/${id}`, patch)
 }
 

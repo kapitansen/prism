@@ -18,7 +18,9 @@
     "close": "Закрыть",
     "loading": "Загрузка…",
     "deleteConfirmTitle": "Удалить?",
-    "deleteConfirmText": "Это действие нельзя отменить."
+    "deleteConfirmText": "Это действие нельзя отменить.",
+    "simpleMode": "Простое",
+    "fullMode": "Полное"
   },
   "today": {
     "comingSoon": "Дашборд внутреннего мира — скоро здесь.",
@@ -59,7 +61,16 @@
     "loading": "Загрузка…",
     "error": "Не удалось загрузить записи",
     "empty": "Пока нет записей",
-    "addEntry": "Добавить запись"
+    "addEntry": "Добавить запись",
+    "title": "Заголовок",
+    "summary": "Саммари",
+    "summaryAiHint": "обычно ведёт ИИ — правь, если нужно",
+    "type": "Тип",
+    "typeDaily": "День",
+    "typeReport": "Отчёт",
+    "typeNote": "Заметка",
+    "date": "Дата",
+    "dateTo": "Дата по"
   },
   "people": {
     "loading": "Загрузка…",
@@ -73,7 +84,13 @@
     "aliasesHint": "через запятую",
     "description": "Описание",
     "summary": "Саммари",
-    "summaryEmpty": "Саммари пока нет"
+    "summaryEmpty": "Саммари пока нет",
+    "summaryAiHint": "обычно ведёт ИИ — правь, если нужно",
+    "status": "Статус",
+    "statusActive": "Активна",
+    "statusArchived": "В архиве",
+    "periodStart": "Начало",
+    "periodEnd": "Конец"
   },
   "cards": {
     "review": "Просмотр",

@@ -18,7 +18,9 @@
     "close": "Close",
     "loading": "Loading…",
     "deleteConfirmTitle": "Delete?",
-    "deleteConfirmText": "This action cannot be undone."
+    "deleteConfirmText": "This action cannot be undone.",
+    "simpleMode": "Simple",
+    "fullMode": "Full"
   },
   "today": {
     "comingSoon": "Your inner-world dashboard — coming soon.",
@@ -59,7 +61,16 @@
     "loading": "Loading…",
     "error": "Couldn't load entries",
     "empty": "No entries yet",
-    "addEntry": "Add entry"
+    "addEntry": "Add entry",
+    "title": "Title",
+    "summary": "Summary",
+    "summaryAiHint": "usually AI-maintained — edit if needed",
+    "type": "Type",
+    "typeDaily": "Day",
+    "typeReport": "Report",
+    "typeNote": "Note",
+    "date": "Date",
+    "dateTo": "Date to"
   },
   "people": {
     "loading": "Loading…",
@@ -73,7 +84,13 @@
     "aliasesHint": "comma-separated",
     "description": "Description",
     "summary": "Summary",
-    "summaryEmpty": "No summary yet"
+    "summaryEmpty": "No summary yet",
+    "summaryAiHint": "usually AI-maintained — edit if needed",
+    "status": "Status",
+    "statusActive": "Active",
+    "statusArchived": "Archived",
+    "periodStart": "Start",
+    "periodEnd": "End"
   },
   "cards": {
     "review": "Review",

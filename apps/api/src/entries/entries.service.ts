@@ -90,6 +90,11 @@ export class EntriesService {
     if (dto.title !== undefined) {
       data.titleEnc = dto.title ? this.encryption.encrypt(dto.title) : null
     }
+    if (dto.summary !== undefined) {
+      data.summaryEnc = dto.summary
+        ? this.encryption.encrypt(dto.summary)
+        : null
+    }
     if (dto.occurredOn !== undefined) data.occurredOn = new Date(dto.occurredOn)
     if (dto.occurredTo !== undefined) {
       data.occurredTo = dto.occurredTo ? new Date(dto.occurredTo) : null

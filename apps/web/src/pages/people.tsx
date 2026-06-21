@@ -10,6 +10,7 @@ import {
   type Entity,
   fetchPeople,
   updateEntity,
+  type UpdateEntityInput,
 } from '@/lib/entities'
 
 const peopleKey = ['entities', 'person'] as const
@@ -47,22 +48,39 @@ function PersonCard({ person }: { person: Entity }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [full, setFull] = useState(false)
   const [name, setName] = useState(person.name)
   const [aliases, setAliases] = useState(person.aliases.join(', '))
   const [description, setDescription] = useState(person.description ?? '')
   const [digest, setDigest] = useState(person.digest ?? '')
+  const [status, setStatus] = useState(person.status)
+  const [periodStart, setPeriodStart] = useState(
+    person.periodStart?.slice(0, 10) ?? '',
+  )
+  const [periodEnd, setPeriodEnd] = useState(
+    person.periodEnd?.slice(0, 10) ?? '',
+  )
 
   const save = useMutation({
-    mutationFn: () =>
-      updateEntity(person.id, {
+    mutationFn: () => {
+      const patch: UpdateEntityInput = {
         name,
         aliases: aliases
           .split(',')
           .map((a) => a.trim())
           .filter(Boolean),
         description,
-        digest,
-      }),
+      }
+      // AI/meta fields are only touched in full mode, so simple edits never
+      // accidentally overwrite the AI digest or status.
+      if (full) {
+        patch.digest = digest
+        patch.status = status
+        if (periodStart) patch.periodStart = periodStart
+        if (periodEnd) patch.periodEnd = periodEnd
+      }
+      return updateEntity(person.id, patch)
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: peopleKey })
       setEditing(false)
@@ -107,6 +125,24 @@ function PersonCard({ person }: { person: Entity }) {
         }}
         className="flex flex-col gap-3"
       >
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            size="xs"
+            variant={full ? 'outline' : 'default'}
+            onClick={() => setFull(false)}
+          >
+            {t('common.simpleMode')}
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={full ? 'default' : 'outline'}
+            onClick={() => setFull(true)}
+          >
+            {t('common.fullMode')}
+          </Button>
+        </div>
         <Field label={t('people.name')}>
           <Input
             value={name}
@@ -124,13 +160,43 @@ function PersonCard({ person }: { person: Entity }) {
             rows={2}
           />
         </Field>
-        <Field label={t('people.summary')}>
-          <Textarea
-            value={digest}
-            onChange={(e) => setDigest(e.target.value)}
-            rows={3}
-          />
-        </Field>
+        {full && (
+          <>
+            <Field label={t('people.summary')} hint={t('people.summaryAiHint')}>
+              <Textarea
+                value={digest}
+                onChange={(e) => setDigest(e.target.value)}
+                rows={6}
+              />
+            </Field>
+            <Field label={t('people.status')}>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="focus-visible:ring-ring/50 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              >
+                <option value="active">{t('people.statusActive')}</option>
+                <option value="archived">{t('people.statusArchived')}</option>
+              </select>
+            </Field>
+            <div className="flex gap-3">
+              <Field label={t('people.periodStart')}>
+                <Input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                />
+              </Field>
+              <Field label={t('people.periodEnd')}>
+                <Input
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                />
+              </Field>
+            </div>
+          </>
+        )}
         <div className="flex gap-2">
           <Button type="submit" size="sm" disabled={save.isPending}>
             {t('people.save')}

@@ -24,6 +24,9 @@ export interface UpdateEntityInput {
   aliases?: string[]
   description?: string
   digest?: string
+  status?: string
+  periodStart?: string
+  periodEnd?: string
 }
 
 export function updateEntity(id: string, patch: UpdateEntityInput) {

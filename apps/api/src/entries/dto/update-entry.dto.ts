@@ -23,6 +23,11 @@ export class UpdateEntryDto {
   @IsString()
   title?: string
 
+  // AI-maintained recap; user-editable so you can fix the AI's wording.
+  @IsOptional()
+  @IsString()
+  summary?: string
+
   @IsOptional()
   @IsDateString()
   occurredOn?: string

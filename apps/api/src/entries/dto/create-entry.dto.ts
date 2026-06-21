@@ -20,6 +20,11 @@ export class CreateEntryDto {
   @IsString()
   title?: string
 
+  // Normally written by the AI on commit; accepted here for completeness.
+  @IsOptional()
+  @IsString()
+  summary?: string
+
   @IsDateString()
   occurredOn!: string
 

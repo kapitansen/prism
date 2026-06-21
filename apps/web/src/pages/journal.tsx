@@ -4,17 +4,19 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CardActions } from '@/components/card-actions'
 import { DayInputPanel } from '@/components/day-input-panel'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   deleteEntry,
   type EntryListItem,
   fetchEntries,
   updateEntry,
+  type UpdateEntryInput,
 } from '@/lib/entries'
 
 const PAGE_SIZE = 20
@@ -102,14 +104,33 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [full, setFull] = useState(false)
   const [body, setBody] = useState(entry.body)
+  const [title, setTitle] = useState(entry.title ?? '')
+  const [summary, setSummary] = useState(entry.summary ?? '')
+  const [type, setType] = useState(entry.type)
+  const [occurredOn, setOccurredOn] = useState(entry.occurredOn.slice(0, 10))
+  const [occurredTo, setOccurredTo] = useState(
+    entry.occurredTo?.slice(0, 10) ?? '',
+  )
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['entries'] })
     void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
   }
   const save = useMutation({
-    mutationFn: () => updateEntry(entry.id, { body }),
+    mutationFn: () => {
+      const patch: UpdateEntryInput = { body }
+      // Title/summary/type/dates are only touched in full mode.
+      if (full) {
+        patch.title = title
+        patch.summary = summary
+        patch.type = type
+        patch.occurredOn = occurredOn
+        if (occurredTo) patch.occurredTo = occurredTo
+      }
+      return updateEntry(entry.id, patch)
+    },
     onSuccess: () => {
       invalidate()
       setEditing(false)
@@ -140,12 +161,82 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
           }}
           className="flex flex-col gap-3"
         >
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              size="xs"
+              variant={full ? 'outline' : 'default'}
+              onClick={() => setFull(false)}
+            >
+              {t('common.simpleMode')}
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant={full ? 'default' : 'outline'}
+              onClick={() => setFull(true)}
+            >
+              {t('common.fullMode')}
+            </Button>
+          </div>
+
+          {full && (
+            <div className="flex gap-3">
+              <EditField label={t('journal.type')}>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="focus-visible:ring-ring/50 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+                >
+                  <option value="daily">{t('journal.typeDaily')}</option>
+                  <option value="report">{t('journal.typeReport')}</option>
+                  <option value="note">{t('journal.typeNote')}</option>
+                </select>
+              </EditField>
+              <EditField label={t('journal.date')}>
+                <Input
+                  type="date"
+                  value={occurredOn}
+                  onChange={(e) => setOccurredOn(e.target.value)}
+                />
+              </EditField>
+              <EditField label={t('journal.dateTo')}>
+                <Input
+                  type="date"
+                  value={occurredTo}
+                  onChange={(e) => setOccurredTo(e.target.value)}
+                />
+              </EditField>
+            </div>
+          )}
+
+          {full && (
+            <EditField label={t('journal.title')}>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </EditField>
+          )}
+
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={5}
             className="focus-visible:ring-ring/50 min-h-28 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
           />
+
+          {full && (
+            <EditField
+              label={t('journal.summary')}
+              hint={t('journal.summaryAiHint')}
+            >
+              <textarea
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                rows={4}
+                className="focus-visible:ring-ring/50 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+              />
+            </EditField>
+          )}
+
           <div className="flex gap-2">
             <Button
               type="submit"
@@ -186,4 +277,22 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString()
+}
+
+function EditField({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <label className="flex flex-1 flex-col gap-1">
+      <span className="text-sm font-medium">{label}</span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      {children}
+    </label>
+  )
 }

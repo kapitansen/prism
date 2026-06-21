@@ -70,18 +70,16 @@ export class AnalysisService {
     const prompt = buildParsePrompt({
       skills: loadSkills(),
       coach: { analysisMd: coach.analysisMd },
-      // Only extracted-type metrics are extraction targets; manual ones are the
-      // user's own taps (chips), the LLM shouldn't guess them from text.
-      metricDefs: metricDefs
-        .filter((d) => d.source === 'extracted')
-        .map((d) => ({
-          key: d.key,
-          name: d.name,
-          unit: d.unit,
-          scaleMin: d.scaleMin,
-          scaleMax: d.scaleMax,
-          source: d.source,
-        })),
+      // TODO: filter by a user "enabled" flag once the metrics settings block
+      // exists. For now pass the user's metric definitions as-is.
+      metricDefs: metricDefs.map((d) => ({
+        key: d.key,
+        name: d.name,
+        unit: d.unit,
+        scaleMin: d.scaleMin,
+        scaleMax: d.scaleMax,
+        source: d.source,
+      })),
       body,
       chips: values.map((v) => ({
         key: v.metricKey,
