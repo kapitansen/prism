@@ -28,4 +28,15 @@ export class IngestionController {
   ) {
     return this.ingestion.parse(user.id, id, dto)
   }
+
+  // Persist a confirmed (user-edited) extraction. Body is validated by zod in
+  // the service (the extraction contract), so it's typed loosely here.
+  @Post(':id/commit')
+  commit(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: unknown,
+  ) {
+    return this.ingestion.commit(user.id, id, body)
+  }
 }

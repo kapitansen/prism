@@ -478,4 +478,60 @@ describe('Tenant isolation (API)', () => {
       .post('/entries/00000000-0000-0000-0000-000000000000/parse')
       .expect(401)
   })
+
+  it('ingestion: commit saves summary, sets parsed, creates a candidate entity', async () => {
+    const id = await createEntryAs(tokenA)
+    const res = await http()
+      .post(`/entries/${id}/commit`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        summary: 'итог дня',
+        metrics: [],
+        entities: [
+          { type: 'person', name: 'Петя', existingId: null, confidence: 0.9 },
+        ],
+        intents: [],
+        cbtFlags: [],
+      })
+      .expect(201)
+    expect(res.body.ingestStatus).toBe('parsed')
+
+    const entry = await http()
+      .get(`/entries/${id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(entry.body.summary).toBe('итог дня')
+
+    const people = await http()
+      .get('/entities?type=person')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200)
+    expect(
+      people.body.find((p: { name: string }) => p.name === 'Петя'),
+    ).toBeTruthy()
+  })
+
+  it("ingestion: B cannot commit A's entry (404)", async () => {
+    const id = await createEntryAs(tokenA)
+    await http()
+      .post(`/entries/${id}/commit`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({
+        summary: 'x',
+        metrics: [],
+        entities: [],
+        intents: [],
+        cbtFlags: [],
+      })
+      .expect(404)
+  })
+
+  it('ingestion: commit rejects a payload that breaks the contract (400)', async () => {
+    const id = await createEntryAs(tokenA)
+    await http()
+      .post(`/entries/${id}/commit`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ summary: '' })
+      .expect(400)
+  })
 })

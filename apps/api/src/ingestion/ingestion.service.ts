@@ -1,10 +1,16 @@
 import {
   BadGatewayException,
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { type ParseResponse, parseResponseSchema } from '@prism/shared'
+import {
+  type Extraction,
+  extractionSchema,
+  type ParseResponse,
+  parseResponseSchema,
+} from '@prism/shared'
 
 import { EncryptionService } from '../crypto/encryption.service'
 import { LLM_RUNNER, type LlmRunner } from '../llm/llm-runner.port'
@@ -47,6 +53,95 @@ export class IngestionService {
     })
 
     return this.validate(await this.llm.run(prompt))
+  }
+
+  // Persist a confirmed (possibly user-edited) extraction: summary → entry,
+  // metrics → metric_values (extracted), entities → links / new rows. Re-checks
+  // everything against the user's own data — never trust the payload blindly.
+  // intents/cbtFlags are deferred (no tables yet). Status → parsed.
+  async commit(userId: string, id: string, body: unknown) {
+    const entry = await this.prisma.entry.findFirst({ where: { id, userId } })
+    if (!entry) {
+      throw new NotFoundException('Entry not found')
+    }
+    const parsed = extractionSchema.safeParse(body)
+    if (!parsed.success) {
+      throw new BadRequestException('Invalid extraction payload')
+    }
+    const ex: Extraction = parsed.data
+
+    // Metrics — only keys the user actually has, values within scale.
+    const defs = await this.prisma.metricDefinition.findMany({
+      where: { userId },
+    })
+    const defByKey = new Map(defs.map((d) => [d.key, d]))
+    for (const m of ex.metrics) {
+      const def = defByKey.get(m.key)
+      if (!def) continue
+      if (
+        def.scaleMin !== null &&
+        def.scaleMax !== null &&
+        (m.value < def.scaleMin || m.value > def.scaleMax)
+      ) {
+        continue
+      }
+      const occurredOn = m.occurredOn
+        ? new Date(m.occurredOn)
+        : entry.occurredOn
+      await this.prisma.metricValue.upsert({
+        where: {
+          userId_metricKey_occurredOn_source: {
+            userId,
+            metricKey: m.key,
+            occurredOn,
+            source: 'extracted',
+          },
+        },
+        update: { value: m.value, entryId: entry.id },
+        create: {
+          userId,
+          metricKey: m.key,
+          occurredOn,
+          source: 'extracted',
+          value: m.value,
+          entryId: entry.id,
+        },
+      })
+    }
+
+    // Entities — link matches (verified as the user's), create confirmed
+    // candidates, then connect all to this entry.
+    const linkIds: string[] = []
+    for (const e of ex.entities) {
+      if (e.existingId) {
+        const existing = await this.prisma.entity.findFirst({
+          where: { id: e.existingId, userId },
+        })
+        if (existing) linkIds.push(existing.id)
+      } else {
+        const created = await this.prisma.entity.create({
+          data: {
+            userId,
+            type: e.type,
+            nameEnc: this.encryption.encrypt(e.name),
+          },
+        })
+        linkIds.push(created.id)
+      }
+    }
+
+    await this.prisma.entry.update({
+      where: { id: entry.id },
+      data: {
+        summaryEnc: this.encryption.encrypt(ex.summary),
+        ingestStatus: 'parsed',
+        ...(linkIds.length
+          ? { entities: { connect: linkIds.map((eid) => ({ id: eid })) } }
+          : {}),
+      },
+    })
+
+    return { id: entry.id, ingestStatus: 'parsed' as const }
   }
 
   // The LLM returns raw text; trust nothing — it must parse as JSON and satisfy
