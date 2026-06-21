@@ -229,6 +229,18 @@ describe('Tenant isolation (API)', () => {
       .expect(400)
   })
 
+  it('metrics enabled: requires a token (401)', async () => {
+    await http().put('/metrics/enabled').send({ keys: [] }).expect(401)
+  })
+
+  it('metrics enabled: rejects more than 4 keys (400)', async () => {
+    await http()
+      .put('/metrics/enabled')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ keys: ['a', 'b', 'c', 'd', 'e'] })
+      .expect(400)
+  })
+
   it("entities: B cannot read A's entity (404)", async () => {
     const id = await createEntityAs(tokenA)
     await http()

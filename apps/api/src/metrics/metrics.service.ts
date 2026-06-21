@@ -17,6 +17,25 @@ export class MetricsService {
     return defs.map((d) => this.toDefinition(d))
   }
 
+  // Set the user's actively-tracked metrics (≤4): enable the given keys, disable
+  // the rest. Capped so the chip row / prompt stays focused.
+  async setEnabled(userId: string, keys: string[]) {
+    if (keys.length > 4) {
+      throw new BadRequestException('At most 4 metrics can be enabled')
+    }
+    await this.prisma.$transaction([
+      this.prisma.metricDefinition.updateMany({
+        where: { userId },
+        data: { enabled: false },
+      }),
+      this.prisma.metricDefinition.updateMany({
+        where: { userId, key: { in: keys } },
+        data: { enabled: true },
+      }),
+    ])
+    return this.listDefinitions(userId)
+  }
+
   // Upsert: one manual value per metric per day (the unique key includes
   // source) — tapping a chip again just updates today's value.
   async recordValue(userId: string, dto: RecordMetricValueDto) {
@@ -87,6 +106,7 @@ export class MetricsService {
       scaleMin: d.scaleMin,
       scaleMax: d.scaleMax,
       source: d.source,
+      enabled: d.enabled,
     }
   }
 

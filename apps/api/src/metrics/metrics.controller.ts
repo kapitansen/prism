@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { QueryMetricValuesDto } from './dto/query-metric-values.dto'
 import { RecordMetricValueDto } from './dto/record-metric-value.dto'
+import { SetEnabledMetricsDto } from './dto/set-enabled-metrics.dto'
 import { MetricsService } from './metrics.service'
 
 @UseGuards(JwtAuthGuard)
@@ -15,6 +16,12 @@ export class MetricsController {
   @Get('definitions')
   listDefinitions(@CurrentUser() user: AuthUser) {
     return this.metrics.listDefinitions(user.id)
+  }
+
+  // Set the actively-tracked metric set (≤4 enabled).
+  @Put('enabled')
+  setEnabled(@CurrentUser() user: AuthUser, @Body() dto: SetEnabledMetricsDto) {
+    return this.metrics.setEnabled(user.id, dto.keys)
   }
 
   @Get('values')

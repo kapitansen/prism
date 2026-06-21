@@ -11,30 +11,54 @@ import {
 // import so there is a single source of truth (DRY).
 
 // Starter metric set: 4 manual day-chips (1–5) + two extracted-from-text.
+// `enabled` is the default tracked-set (≤4); the user changes it in settings.
 export const STARTER_METRICS = [
-  { key: 'mood', name: 'Mood', scaleMin: 1, scaleMax: 5, source: 'manual' },
+  {
+    key: 'mood',
+    name: 'Mood',
+    scaleMin: 1,
+    scaleMax: 5,
+    source: 'manual',
+    enabled: true,
+  },
   {
     key: 'sleep_quality',
     name: 'Sleep quality',
     scaleMin: 1,
     scaleMax: 5,
     source: 'manual',
+    enabled: true,
   },
-  { key: 'energy', name: 'Energy', scaleMin: 1, scaleMax: 5, source: 'manual' },
+  {
+    key: 'energy',
+    name: 'Energy',
+    scaleMin: 1,
+    scaleMax: 5,
+    source: 'manual',
+    enabled: true,
+  },
   {
     key: 'activity',
     name: 'Activity',
     scaleMin: 1,
     scaleMax: 5,
     source: 'manual',
+    enabled: true,
   },
-  { key: 'sleep_hours', name: 'Sleep hours', unit: 'h', source: 'extracted' },
+  {
+    key: 'sleep_hours',
+    name: 'Sleep hours',
+    unit: 'h',
+    source: 'extracted',
+    enabled: false,
+  },
   {
     key: 'anxiety',
     name: 'Anxiety',
     scaleMin: 1,
     scaleMax: 5,
     source: 'extracted',
+    enabled: false,
   },
 ] as const
 
@@ -42,11 +66,13 @@ export const STARTER_METRICS = [
 // yet, create the default one and point the user's settings at it.
 export async function ensureBaseline(prisma: PrismaClient, userId: string) {
   for (const m of STARTER_METRICS) {
-    const { key, ...attrs } = m
+    const { key, enabled, ...attrs } = m
     await prisma.metricDefinition.upsert({
       where: { userId_key: { userId, key } },
-      update: attrs, // keep definitions in sync with this file on re-run
-      create: { userId, key, ...attrs },
+      // Sync definition fields on re-run, but never clobber the user's enabled
+      // choice — enabled is only set when the row is first created.
+      update: attrs,
+      create: { userId, key, enabled, ...attrs },
     })
   }
 

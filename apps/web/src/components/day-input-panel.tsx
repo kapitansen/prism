@@ -136,11 +136,14 @@ export function DayInputPanel({
       queryClient.invalidateQueries({ queryKey: ['metric-values'] }),
   })
 
-  // Chips only for manual, scaled metrics; extracted ones (sleep_hours,
+  // Chips only for enabled manual, scaled metrics; extracted ones (sleep_hours,
   // anxiety) are filled by the parser, not tapped here.
   const manual = (defsQuery.data ?? []).filter(
     (d): d is MetricDefinition & { scaleMin: number; scaleMax: number } =>
-      d.source === 'manual' && d.scaleMin !== null && d.scaleMax !== null,
+      d.enabled &&
+      d.source === 'manual' &&
+      d.scaleMin !== null &&
+      d.scaleMax !== null,
   )
 
   const valueFor = (key: string) =>

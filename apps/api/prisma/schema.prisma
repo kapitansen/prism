@@ -143,6 +143,9 @@ model MetricDefinition {
   scaleMin Int?         @map("scale_min") @db.SmallInt
   scaleMax Int?         @map("scale_max") @db.SmallInt
   source   MetricSource
+  // Whether the user actively tracks this metric: enabled ones show as chips
+  // (manual) and go into the analysis prompt. Capped at 4 enabled per user.
+  enabled  Boolean      @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

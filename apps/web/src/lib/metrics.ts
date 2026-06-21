@@ -8,6 +8,7 @@ export interface MetricDefinition {
   scaleMin: number | null
   scaleMax: number | null
   source: string
+  enabled: boolean
 }
 
 export interface MetricValue {
@@ -21,6 +22,11 @@ export interface MetricValue {
 
 export function fetchMetricDefinitions() {
   return api.get<MetricDefinition[]>('/metrics/definitions')
+}
+
+// Set the actively-tracked metric set (≤4). Returns the updated definitions.
+export function setEnabledMetrics(keys: string[]) {
+  return api.put<MetricDefinition[]>('/metrics/enabled', { keys })
 }
 
 export function fetchMetricValues(

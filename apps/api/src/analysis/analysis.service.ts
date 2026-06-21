@@ -70,16 +70,17 @@ export class AnalysisService {
     const prompt = buildParsePrompt({
       skills: loadSkills(),
       coach: { analysisMd: coach.analysisMd },
-      // TODO: filter by a user "enabled" flag once the metrics settings block
-      // exists. For now pass the user's metric definitions as-is.
-      metricDefs: metricDefs.map((d) => ({
-        key: d.key,
-        name: d.name,
-        unit: d.unit,
-        scaleMin: d.scaleMin,
-        scaleMax: d.scaleMax,
-        source: d.source,
-      })),
+      // Only the metrics the user actively tracks (enabled in settings).
+      metricDefs: metricDefs
+        .filter((d) => d.enabled)
+        .map((d) => ({
+          key: d.key,
+          name: d.name,
+          unit: d.unit,
+          scaleMin: d.scaleMin,
+          scaleMax: d.scaleMax,
+          source: d.source,
+        })),
       body,
       chips: values.map((v) => ({
         key: v.metricKey,
@@ -176,9 +177,10 @@ export class AnalysisService {
       })),
       recentDays: recent.map((r) => ({
         date: dayIso(r.occurredOn),
+        // Prefer the AI summary; otherwise the full text — no arbitrary cut.
         text: r.summaryEnc
           ? this.encryption.decrypt(r.summaryEnc)
-          : truncate(this.encryption.decrypt(r.bodyEnc), 200),
+          : this.encryption.decrypt(r.bodyEnc),
       })),
     }
   }
@@ -303,8 +305,4 @@ export class AnalysisService {
 
 function dayIso(d: Date): string {
   return d.toISOString().slice(0, 10)
-}
-
-function truncate(s: string, max: number): string {
-  return s.length > max ? `${s.slice(0, max)}…` : s
 }

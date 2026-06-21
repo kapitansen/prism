@@ -54,7 +54,9 @@
       "mood": "Mood",
       "sleep_quality": "Sleep quality",
       "energy": "Energy",
-      "activity": "Activity"
+      "activity": "Activity",
+      "sleep_hours": "Sleep hours",
+      "anxiety": "Anxiety"
     }
   },
   "journal": {
@@ -139,6 +141,10 @@
     },
     "timezone": {
       "label": "Timezone"
+    },
+    "metrics": {
+      "label": "Tracked metrics",
+      "hint": "Selected {{count}} of {{max}} — shown as day chips and used in analysis"
     },
     "ai": {
       "title": "AI coach settings",
