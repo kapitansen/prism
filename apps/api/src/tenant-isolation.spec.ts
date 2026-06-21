@@ -5,6 +5,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { AppModule } from './app.module'
+import { FakeRunner } from './llm/fake-runner'
 import { PrismaService } from './prisma/prisma.service'
 
 describe('Tenant isolation (API)', () => {
@@ -435,5 +436,46 @@ describe('Tenant isolation (API)', () => {
 
   it('coach-pack: requires a token (401)', async () => {
     await http().get('/coach-pack').expect(401)
+  })
+
+  it("ingestion: B cannot parse A's entry (404)", async () => {
+    const id = await createEntryAs(tokenA)
+    await http()
+      .post(`/entries/${id}/parse`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({})
+      .expect(404)
+  })
+
+  it('ingestion: parse returns a complete extraction (fake)', async () => {
+    const id = await createEntryAs(tokenA)
+    const res = await http()
+      .post(`/entries/${id}/parse`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({})
+      .expect(201)
+    expect(res.body.status).toBe('complete')
+    expect(res.body.summary).toBeTruthy()
+  })
+
+  it('ingestion: parse returns clarify questions when the runner asks', async () => {
+    const id = await createEntryAs(tokenA)
+    app.get(FakeRunner).enqueue({
+      status: 'needs_clarification',
+      clarifyQuestions: [{ question: 'как спал?' }],
+    })
+    const res = await http()
+      .post(`/entries/${id}/parse`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({})
+      .expect(201)
+    expect(res.body.status).toBe('needs_clarification')
+    expect(res.body.clarifyQuestions[0].question).toBe('как спал?')
+  })
+
+  it('ingestion: parse requires a token (401)', async () => {
+    await http()
+      .post('/entries/00000000-0000-0000-0000-000000000000/parse')
+      .expect(401)
   })
 })
