@@ -605,19 +605,42 @@ function DayEditor({
         <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
           <span className="text-sm font-medium">{t('today.clarifyTitle')}</span>
           {proposal.clarifyQuestions.map((q, i) => (
-            <label key={i} className="flex flex-col gap-1">
+            <div key={i} className="flex flex-col gap-1">
               <span className="text-sm">{q.question}</span>
-              <textarea
-                value={answers[i] ?? ''}
-                onChange={(e) =>
-                  setAnswers((a) =>
-                    a.map((x, j) => (j === i ? e.target.value : x)),
-                  )
-                }
-                rows={2}
-                className={ANALYSIS_FIELD}
-              />
-            </label>
+              {q.options && q.options.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {q.options.map((opt) => (
+                    <Button
+                      key={opt}
+                      type="button"
+                      size="sm"
+                      variant={answers[i] === opt ? 'default' : 'outline'}
+                      disabled={busy}
+                      onClick={() => {
+                        setAnswers((a) => a.map((x, j) => (j === i ? opt : x)))
+                        // Single one-click question → submit immediately.
+                        if (proposal.clarifyQuestions.length === 1) {
+                          void runRound([{ question: q.question, answer: opt }])
+                        }
+                      }}
+                    >
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <textarea
+                  value={answers[i] ?? ''}
+                  onChange={(e) =>
+                    setAnswers((a) =>
+                      a.map((x, j) => (j === i ? e.target.value : x)),
+                    )
+                  }
+                  rows={2}
+                  className={ANALYSIS_FIELD}
+                />
+              )}
+            </div>
           ))}
           <div className="flex gap-2">
             <Button size="sm" disabled={busy} onClick={submitAnswers}>

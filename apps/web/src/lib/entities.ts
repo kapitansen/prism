@@ -5,6 +5,7 @@ export interface Entity {
   id: string
   type: string
   name: string
+  handle: string | null
   aliases: string[]
   description: string | null
   status: string
@@ -21,6 +22,7 @@ export function fetchPeople() {
 
 export interface UpdateEntityInput {
   name?: string
+  handle?: string
   aliases?: string[]
   description?: string
   digest?: string

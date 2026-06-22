@@ -50,6 +50,7 @@ function PersonCard({ person }: { person: Entity }) {
   const [editing, setEditing] = useState(false)
   const [full, setFull] = useState(false)
   const [name, setName] = useState(person.name)
+  const [handle, setHandle] = useState(person.handle ?? '')
   const [aliases, setAliases] = useState(person.aliases.join(', '))
   const [description, setDescription] = useState(person.description ?? '')
   const [digest, setDigest] = useState(person.digest ?? '')
@@ -74,6 +75,7 @@ function PersonCard({ person }: { person: Entity }) {
       // AI/meta fields are only touched in full mode, so simple edits never
       // accidentally overwrite the AI digest or status.
       if (full) {
+        if (handle.trim()) patch.handle = handle.trim()
         patch.digest = digest
         patch.status = status
         if (periodStart) patch.periodStart = periodStart
@@ -98,7 +100,14 @@ function PersonCard({ person }: { person: Entity }) {
           onEdit={() => setEditing(true)}
           onDelete={() => remove.mutate()}
         />
-        <h2 className="pr-16 font-medium">{person.name}</h2>
+        <h2 className="pr-16 font-medium">
+          {person.name}
+          {person.handle && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              @{person.handle}
+            </span>
+          )}
+        </h2>
         {person.aliases.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {person.aliases.join(', ')}
@@ -162,6 +171,13 @@ function PersonCard({ person }: { person: Entity }) {
         </Field>
         {full && (
           <>
+            <Field label={t('people.handle')} hint={t('people.handleHint')}>
+              <Input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="nickname"
+              />
+            </Field>
             <Field label={t('people.summary')} hint={t('people.summaryAiHint')}>
               <Textarea
                 value={digest}
