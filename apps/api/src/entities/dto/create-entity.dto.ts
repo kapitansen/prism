@@ -17,6 +17,12 @@ export class CreateEntityDto {
   @MinLength(1)
   name!: string
 
+  // Optional desired @-handle; slugified + de-duplicated. Auto-generated from
+  // the name when omitted.
+  @IsOptional()
+  @IsString()
+  handle?: string
+
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

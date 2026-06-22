@@ -19,6 +19,11 @@ export class UpdateEntityDto {
   @MinLength(1)
   name?: string
 
+  // Changing this rewrites @old → @new in the user's entry texts (links stay by id).
+  @IsOptional()
+  @IsString()
+  handle?: string
+
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
