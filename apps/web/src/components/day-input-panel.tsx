@@ -304,6 +304,9 @@ export function DayInputPanel({
             initialId={dayQuery.data?.id ?? null}
             initialText={dayQuery.data?.body ?? ''}
             initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
+            initialTitle={dayQuery.data?.title ?? ''}
+            initialSummary={dayQuery.data?.summary ?? ''}
+            initialType={dayQuery.data?.type ?? 'daily'}
           />
         )}
       </div>
@@ -322,12 +325,18 @@ function DayEditor({
   initialId,
   initialText,
   initialStatus,
+  initialTitle,
+  initialSummary,
+  initialType,
 }: {
   date: string
   to: string | null
   initialId: string | null
   initialText: string
   initialStatus: string
+  initialTitle: string
+  initialSummary: string
+  initialType: string
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -336,6 +345,14 @@ function DayEditor({
     'idle',
   )
   const [parsed, setParsed] = useState(initialStatus === 'parsed')
+  // Full edit mode: the day's meta + AI fields, saved separately from the parse.
+  const [full, setFull] = useState(false)
+  const [editTitle, setEditTitle] = useState(initialTitle)
+  const [editSummary, setEditSummary] = useState(initialSummary)
+  const [editType, setEditType] = useState(initialType)
+  const [editFrom, setEditFrom] = useState(date)
+  const [editTo, setEditTo] = useState(to ?? '')
+  const [metaSaving, setMetaSaving] = useState(false)
   // The current parse proposal (null = not analysing).
   const [proposal, setProposal] = useState<ParseResponse | null>(null)
   const [answers, setAnswers] = useState<string[]>([]) // current round inputs
@@ -450,6 +467,28 @@ function DayEditor({
     }
   }
 
+  // Save the day's meta/AI fields. Ensures the entry exists first (the body
+  // autosave creates it), then patches it. occurredOn may move the day, so we
+  // invalidate rather than write the day-entry cache directly.
+  async function saveMeta() {
+    await saveNow()
+    if (!entryId.current) return
+    setMetaSaving(true)
+    try {
+      await updateEntry(entryId.current, {
+        title: editTitle,
+        summary: editSummary,
+        type: editType,
+        occurredOn: editFrom,
+        ...(editTo ? { occurredTo: editTo } : {}),
+      })
+      void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
+      void queryClient.invalidateQueries({ queryKey: ['entries'] })
+    } finally {
+      setMetaSaving(false)
+    }
+  }
+
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current)
@@ -461,11 +500,31 @@ function DayEditor({
     <>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">{t('today.dayTitle')}</h2>
-        {saveStatus !== 'idle' && (
-          <span className="text-xs text-muted-foreground">
-            {saveStatus === 'saving' ? t('today.saving') : t('today.saved')}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {saveStatus !== 'idle' && (
+            <span className="text-xs text-muted-foreground">
+              {saveStatus === 'saving' ? t('today.saving') : t('today.saved')}
+            </span>
+          )}
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              size="xs"
+              variant={full ? 'outline' : 'default'}
+              onClick={() => setFull(false)}
+            >
+              {t('common.simpleMode')}
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant={full ? 'default' : 'outline'}
+              onClick={() => setFull(true)}
+            >
+              {t('common.fullMode')}
+            </Button>
+          </div>
+        </div>
       </div>
       <textarea
         value={text}
@@ -474,6 +533,73 @@ function DayEditor({
         rows={6}
         className={`min-h-32 ${ANALYSIS_FIELD}`}
       />
+
+      {full && (
+        <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">{t('journal.title')}</span>
+            <input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className={ANALYSIS_FIELD}
+            />
+          </label>
+          <div className="flex gap-3">
+            <label className="flex flex-1 flex-col gap-1">
+              <span className="text-sm">{t('journal.type')}</span>
+              <select
+                value={editType}
+                onChange={(e) => setEditType(e.target.value)}
+                className={ANALYSIS_FIELD}
+              >
+                <option value="daily">{t('journal.typeDaily')}</option>
+                <option value="report">{t('journal.typeReport')}</option>
+                <option value="note">{t('journal.typeNote')}</option>
+              </select>
+            </label>
+            <label className="flex flex-1 flex-col gap-1">
+              <span className="text-sm">{t('journal.date')}</span>
+              <input
+                type="date"
+                value={editFrom}
+                onChange={(e) => setEditFrom(e.target.value)}
+                className={ANALYSIS_FIELD}
+              />
+            </label>
+            <label className="flex flex-1 flex-col gap-1">
+              <span className="text-sm">{t('journal.dateTo')}</span>
+              <input
+                type="date"
+                value={editTo}
+                onChange={(e) => setEditTo(e.target.value)}
+                className={ANALYSIS_FIELD}
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm">{t('today.summaryLabel')}</span>
+            <span className="text-xs text-muted-foreground">
+              {t('journal.summaryAiHint')}
+            </span>
+            <textarea
+              value={editSummary}
+              onChange={(e) => setEditSummary(e.target.value)}
+              rows={4}
+              className={ANALYSIS_FIELD}
+            />
+          </label>
+          <div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={metaSaving}
+              onClick={() => void saveMeta()}
+            >
+              {t('common.save')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {proposal?.status === 'needs_clarification' ? (
         <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
