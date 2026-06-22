@@ -149,6 +149,7 @@ export class AnalysisService {
     const decrypted = entities.map((e) => ({
       id: e.id,
       name: this.encryption.decrypt(e.nameEnc),
+      handle: e.handleEnc ? this.encryption.decrypt(e.handleEnc) : null,
       aliases: e.aliasesEnc
         ? (JSON.parse(this.encryption.decrypt(e.aliasesEnc)) as string[])
         : [],
@@ -162,9 +163,10 @@ export class AnalysisService {
     }))
 
     return {
-      entities: decrypted.map(({ id, name, aliases, type }) => ({
+      entities: decrypted.map(({ id, name, handle, aliases, type }) => ({
         id,
         name,
+        handle,
         aliases,
         type,
       })),

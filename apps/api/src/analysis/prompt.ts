@@ -13,7 +13,13 @@ interface MetricDef {
 // Context pushed from the DB so the LLM can ground its analysis (spec layer 5).
 export interface ParseContext {
   // All of the user's entities — the candidate list for setting existingId.
-  entities: { id: string; name: string; aliases: string[]; type: string }[]
+  entities: {
+    id: string
+    name: string
+    handle: string | null
+    aliases: string[]
+    type: string
+  }[]
   // Summaries of entities likely mentioned today (AI digest, else human note).
   dossiers: { name: string; summary: string }[]
   // CBT cards (trigger thoughts), so the LLM can raise cbtFlags by id.
@@ -73,10 +79,11 @@ function buildContextBlock(ctx: ParseContext): string {
   const entities = ctx.entities.length
     ? ctx.entities
         .map((e) => {
+          const handle = e.handle ? ` @${e.handle}` : ''
           const aliases = e.aliases.length
             ? ` (алиасы: ${e.aliases.join(', ')})`
             : ''
-          return `- [${e.id}] ${e.name}${aliases} — ${e.type}`
+          return `- [${e.id}]${handle} ${e.name}${aliases} — ${e.type}`
         })
         .join('\n')
     : '—'
@@ -95,7 +102,7 @@ function buildContextBlock(ctx: ParseContext): string {
     : '—'
 
   return [
-    `Известные люди и сущности (ставь их id в existingId при совпадении):\n${entities}`,
+    `Известные люди и сущности — формат «[id] @handle Имя (алиасы) — тип». В тексте дня @handle ссылается ровно на эту сущность; ставь её id в existingId.\n${entities}`,
     '',
     `Досье упомянутых сегодня:\n${dossiers}`,
     '',
