@@ -98,6 +98,10 @@ model Entity {
   userId          String       @map("user_id") @db.Uuid
   type            EntityType
   nameEnc         String       @map("name_enc")
+  // Unique @-handle for precise tagging in entry text (e.g. @nastya). Encrypted
+  // like the name; uniqueness is enforced in app code (decrypt + compare), not
+  // a DB constraint, since the ciphertext is non-deterministic.
+  handleEnc       String?      @map("handle_enc")
   aliasesEnc      String?      @map("aliases_enc")
   descriptionEnc  String?      @map("description_enc")
   status          EntityStatus @default(active)

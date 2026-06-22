@@ -33,9 +33,14 @@ export const extractedIntentSchema = z
   .object({ text: z.string().min(1) })
   .strict()
 
-// No pre-canned answers — the user replies in free text.
+// Free-text by default. `options` may offer one-click answers (e.g. ["Да","Нет"]
+// for an entity-confirm question like "Вася — это @vas123?"); the chosen option
+// string is sent back as the answer.
 export const clarifyQuestionSchema = z
-  .object({ question: z.string().min(1) })
+  .object({
+    question: z.string().min(1),
+    options: z.array(z.string().min(1)).optional(),
+  })
   .strict()
 
 export const cbtFlagSchema = z
