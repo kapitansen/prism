@@ -136,14 +136,11 @@ export function DayInputPanel({
       queryClient.invalidateQueries({ queryKey: ['metric-values'] }),
   })
 
-  // Chips only for enabled manual, scaled metrics; extracted ones (sleep_hours,
-  // anxiety) are filled by the parser, not tapped here.
-  const manual = (defsQuery.data ?? []).filter(
+  // A chip for every enabled metric with a 1–N scale (regardless of source —
+  // you can tap to rate it). Scaleless metrics (e.g. sleep_hours) aren't chips.
+  const chipMetrics = (defsQuery.data ?? []).filter(
     (d): d is MetricDefinition & { scaleMin: number; scaleMax: number } =>
-      d.enabled &&
-      d.source === 'manual' &&
-      d.scaleMin !== null &&
-      d.scaleMax !== null,
+      d.enabled && d.scaleMin !== null && d.scaleMax !== null,
   )
 
   const valueFor = (key: string) =>
@@ -275,7 +272,7 @@ export function DayInputPanel({
         <p className="text-sm text-destructive">{t('today.error')}</p>
       )}
       <div className="flex flex-wrap gap-x-6 gap-y-4">
-        {manual.map((d) => (
+        {chipMetrics.map((d) => (
           <div key={d.key} className="flex flex-col items-center gap-1.5">
             <span className="text-sm text-muted-foreground">{label(d)}</span>
             <ChipGroup
