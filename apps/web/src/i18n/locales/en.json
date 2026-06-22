@@ -83,7 +83,6 @@
     "cancel": "Cancel",
     "name": "Name",
     "handle": "Handle (@handle)",
-    "handleHint": "unique; use @handle in text for an exact link",
     "aliases": "Aliases",
     "aliasesHint": "comma-separated",
     "description": "Description",

@@ -72,10 +72,11 @@ function PersonCard({ person }: { person: Entity }) {
           .filter(Boolean),
         description,
       }
+      // Handle is a basic field (shown in simple mode too).
+      if (handle.trim()) patch.handle = handle.trim()
       // AI/meta fields are only touched in full mode, so simple edits never
       // accidentally overwrite the AI digest or status.
       if (full) {
-        if (handle.trim()) patch.handle = handle.trim()
         patch.digest = digest
         patch.status = status
         if (periodStart) patch.periodStart = periodStart
@@ -152,13 +153,26 @@ function PersonCard({ person }: { person: Entity }) {
             {t('common.fullMode')}
           </Button>
         </div>
-        <Field label={t('people.name')}>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </Field>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <Field label={t('people.name')}>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </Field>
+          </div>
+          <div className="flex-1">
+            <Field label={t('people.handle')}>
+              <Input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="nickname"
+              />
+            </Field>
+          </div>
+        </div>
         <Field label={t('people.aliases')} hint={t('people.aliasesHint')}>
           <Input value={aliases} onChange={(e) => setAliases(e.target.value)} />
         </Field>
@@ -171,13 +185,6 @@ function PersonCard({ person }: { person: Entity }) {
         </Field>
         {full && (
           <>
-            <Field label={t('people.handle')} hint={t('people.handleHint')}>
-              <Input
-                value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-                placeholder="nickname"
-              />
-            </Field>
             <Field label={t('people.summary')} hint={t('people.summaryAiHint')}>
               <Textarea
                 value={digest}
