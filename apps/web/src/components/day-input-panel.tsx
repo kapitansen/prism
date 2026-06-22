@@ -12,6 +12,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { MentionTextarea } from '@/components/mention-textarea'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { ChipGroup } from '@/components/ui/chip-group'
@@ -21,6 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { commitEntry, parseEntry } from '@/lib/analysis'
+import { fetchEntities } from '@/lib/entities'
 import { createEntry, fetchEntries, updateEntry } from '@/lib/entries'
 import {
   fetchMetricDefinitions,
@@ -366,6 +368,15 @@ function DayEditor({
   const [lastSaved, setLastSaved] = useState(initialText)
   const dirty = text !== lastSaved
 
+  // Entities with a handle → @-mention suggestions for the day text.
+  const entitiesQuery = useQuery({
+    queryKey: ['entities'],
+    queryFn: fetchEntities,
+  })
+  const mentionOptions = (entitiesQuery.data ?? [])
+    .filter((e) => e.handle)
+    .map((e) => ({ handle: e.handle as string, name: e.name }))
+
   function syncCaches(saved: Awaited<ReturnType<typeof updateEntry>>) {
     queryClient.setQueryData(['day-entry', date], saved)
     void queryClient.invalidateQueries({ queryKey: ['entries'] })
@@ -526,12 +537,13 @@ function DayEditor({
           </div>
         </div>
       </div>
-      <textarea
+      <MentionTextarea
         value={text}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
+        options={mentionOptions}
         placeholder={t('today.dayPlaceholder')}
         rows={6}
-        className={`min-h-32 ${ANALYSIS_FIELD}`}
+        className={`min-h-32 w-full ${ANALYSIS_FIELD}`}
       />
 
       {full && (

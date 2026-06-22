@@ -20,6 +20,11 @@ export function fetchPeople() {
   return api.get<Entity[]>('/entities?type=person')
 }
 
+// All entities (any type) — used for @-mention suggestions in the day text.
+export function fetchEntities() {
+  return api.get<Entity[]>('/entities')
+}
+
 export interface UpdateEntityInput {
   name?: string
   handle?: string
