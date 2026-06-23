@@ -114,7 +114,7 @@ describe('Tenant isolation (API)', () => {
     const res = await http()
       .post('/cbt-cards')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'триггер', explanation: 'основной текст' })
+      .send({ title: 'trigger', explanation: 'main text' })
       .expect(201)
     return res.body.id as string
   }
@@ -461,7 +461,7 @@ describe('Tenant isolation (API)', () => {
     const id = await createEntryAs(tokenA)
     app.get(FakeRunner).enqueue({
       status: 'needs_clarification',
-      clarifyQuestions: [{ question: 'как спал?' }],
+      clarifyQuestions: [{ question: 'how did you sleep?' }],
     })
     const res = await http()
       .post(`/entries/${id}/parse`)
@@ -469,7 +469,7 @@ describe('Tenant isolation (API)', () => {
       .send({})
       .expect(201)
     expect(res.body.status).toBe('needs_clarification')
-    expect(res.body.clarifyQuestions[0].question).toBe('как спал?')
+    expect(res.body.clarifyQuestions[0].question).toBe('how did you sleep?')
   })
 
   it('ingestion: multi-round parse — answer, then complete (server-stored)', async () => {
@@ -477,11 +477,11 @@ describe('Tenant isolation (API)', () => {
     app.get(FakeRunner).enqueue(
       {
         status: 'needs_clarification',
-        clarifyQuestions: [{ question: 'как спал?' }],
+        clarifyQuestions: [{ question: 'how did you sleep?' }],
       },
       {
         status: 'complete',
-        summary: 'итог',
+        summary: 'summary',
         metrics: [],
         entities: [],
         intents: [],
@@ -497,7 +497,7 @@ describe('Tenant isolation (API)', () => {
     const r2 = await http()
       .post(`/entries/${id}/parse`)
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ answers: [{ question: 'как спал?', answer: 'плохо' }] })
+      .send({ answers: [{ question: 'how did you sleep?', answer: 'badly' }] })
       .expect(201)
     expect(r2.body.status).toBe('complete')
   })
@@ -514,10 +514,10 @@ describe('Tenant isolation (API)', () => {
       .post(`/entries/${id}/commit`)
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
-        summary: 'итог дня',
+        summary: 'day summary',
         metrics: [],
         entities: [
-          { type: 'person', name: 'Петя', existingId: null, confidence: 0.9 },
+          { type: 'person', name: 'Pat', existingId: null, confidence: 0.9 },
         ],
         intents: [],
         cbtFlags: [],
@@ -529,14 +529,14 @@ describe('Tenant isolation (API)', () => {
       .get(`/entries/${id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
-    expect(entry.body.summary).toBe('итог дня')
+    expect(entry.body.summary).toBe('day summary')
 
     const people = await http()
       .get('/entities?type=person')
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
     expect(
-      people.body.find((p: { name: string }) => p.name === 'Петя'),
+      people.body.find((p: { name: string }) => p.name === 'Pat'),
     ).toBeTruthy()
   })
 

@@ -688,7 +688,9 @@ function DayEditor({
           {proposal.entities.length > 0 && (
             <p className="text-xs text-muted-foreground">
               {proposal.entities
-                .map((e) => (e.existingId ? e.name : `${e.name} (новый)`))
+                .map((e) =>
+                  e.existingId ? e.name : `${e.name} (${t('today.newEntity')})`,
+                )
                 .join(', ')}
             </p>
           )}

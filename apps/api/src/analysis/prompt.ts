@@ -51,27 +51,30 @@ export function buildParsePrompt(input: {
     ? input.chips.map((c) => `${c.key}=${c.value}`).join(', ')
     : '—'
   const qa = input.answers.length
-    ? input.answers.map((a) => `В: ${a.question}\nО: ${a.answer}`).join('\n\n')
+    ? input.answers.map((a) => `Q: ${a.question}\nA: ${a.answer}`).join('\n\n')
     : '—'
 
   return [
-    section('МЕТОДИКА', `${input.skills.core}\n\n${input.skills.entryAnalyst}`),
-    section('НАСТРОЙКИ КОУЧА — РАЗБОР', input.coach.analysisMd),
     section(
-      'ДАННЫЕ ДНЯ',
+      'METHODOLOGY',
+      `${input.skills.core}\n\n${input.skills.entryAnalyst}`,
+    ),
+    section('COACH SETTINGS — ANALYSIS', input.coach.analysisMd),
+    section(
+      'DAY DATA',
       [
-        `Метрики, доступные для извлечения из текста (только эти ключи):\n${metricList}`,
+        `Metrics available for extraction from the text (use only these keys):\n${metricList}`,
         '',
-        `Метрики, уже отмеченные пользователем (чипы): ${chips}`,
-        'Их повторно извлекать не нужно.',
+        `Metrics the user already marked (chips): ${chips}`,
+        'No need to extract those again.',
         '',
-        `Текст дня:\n${input.body}`,
+        `Day text:\n${input.body}`,
         '',
-        `Ответы на уточняющие вопросы:\n${qa}`,
+        `Answers to clarifying questions:\n${qa}`,
       ].join('\n'),
     ),
-    section('КОНТЕКСТ ИЗ БАЗЫ', buildContextBlock(input.context)),
-    'Верни ТОЛЬКО JSON по контракту extraction. Без markdown-обёрток.',
+    section('CONTEXT FROM THE DATABASE', buildContextBlock(input.context)),
+    'Return ONLY JSON per the extraction contract. No markdown fences.',
   ].join('\n\n')
 }
 
@@ -81,7 +84,7 @@ function buildContextBlock(ctx: ParseContext): string {
         .map((e) => {
           const handle = e.handle ? ` @${e.handle}` : ''
           const aliases = e.aliases.length
-            ? ` (алиасы: ${e.aliases.join(', ')})`
+            ? ` (aliases: ${e.aliases.join(', ')})`
             : ''
           return `- [${e.id}]${handle} ${e.name}${aliases} — ${e.type}`
         })
@@ -91,40 +94,40 @@ function buildContextBlock(ctx: ParseContext): string {
   // start/end fences — the LLM can always tell where one ends.
   const dossiers = ctx.dossiers.length
     ? ctx.dossiers
-        .map((d) => fence(`ПРОФИЛЬ: ${d.name}`, d.summary))
+        .map((d) => fence(`PROFILE: ${d.name}`, d.summary))
         .join('\n\n')
     : '—'
   const cards = ctx.cbtCards.length
     ? ctx.cbtCards.map((c) => `- [${c.id}] ${c.title}`).join('\n')
     : '—'
   const recent = ctx.recentDays.length
-    ? ctx.recentDays.map((r) => fence(`ДЕНЬ ${r.date}`, r.text)).join('\n\n')
+    ? ctx.recentDays.map((r) => fence(`DAY ${r.date}`, r.text)).join('\n\n')
     : '—'
 
   return [
-    `Известные люди и сущности — формат «[id] @handle Имя (алиасы) — тип». В тексте дня @handle ссылается ровно на эту сущность; ставь её id в existingId.\n${entities}`,
+    `Known people and entities — format "[id] @handle Name (aliases) — type". In the day text, @handle refers to exactly this entity; put its id in existingId.\n${entities}`,
     '',
-    `Досье упомянутых сегодня:\n${dossiers}`,
+    `Dossiers of those likely mentioned today:\n${dossiers}`,
     '',
-    `КПТ-карточки (для cbtFlags):\n${cards}`,
+    `CBT cards (for cbtFlags):\n${cards}`,
     '',
-    `Недавние записи:\n${recent}`,
+    `Recent entries:\n${recent}`,
   ].join('\n')
 }
 
 // An explicitly delimited block so nested markdown can't blur its boundaries.
 function fence(label: string, body: string): string {
-  return `===== НАЧАЛО · ${label} =====\n${body.trim()}\n===== КОНЕЦ · ${label} =====`
+  return `===== BEGIN · ${label} =====\n${body.trim()}\n===== END · ${label} =====`
 }
 
 function describeMetric(d: MetricDef): string {
   const range =
     d.scaleMin !== null && d.scaleMax !== null
-      ? `шкала ${d.scaleMin}–${d.scaleMax}`
+      ? `scale ${d.scaleMin}–${d.scaleMax}`
       : d.unit
-        ? `единица: ${d.unit}`
-        : 'без шкалы'
-  return `${d.key} — ${d.name} (${range}, тип: ${d.source})`
+        ? `unit: ${d.unit}`
+        : 'no scale'
+  return `${d.key} — ${d.name} (${range}, type: ${d.source})`
 }
 
 function section(title: string, body: string): string {

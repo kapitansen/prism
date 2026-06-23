@@ -12,11 +12,16 @@ const encryption = new EncryptionService({
   getOrThrow: (key: string) => process.env[key],
 } as unknown as ConfigService)
 
-// Dev-only seeded accounts (no signup flow yet). These passwords are dev
-// credentials for local login, not production secrets.
-const USERS = [{ email: 'demo@prism.local', password: '12345', isDemo: true }]
+type Lang = 'en' | 'ru'
 
-// Demo content so the Journal and People screens aren't empty in dev.
+// Dev-only seeded accounts (no signup flow yet). Two demo tenants — one English,
+// one Russian — so the product can be shown to coaches in either language. These
+// passwords are dev credentials, not production secrets. All content is fictional.
+const USERS: { email: string; password: string; lang: Lang }[] = [
+  { email: 'demo@prism.local', password: '12345', lang: 'en' },
+  { email: 'demo-ru@prism.local', password: '12345', lang: 'ru' },
+]
+
 interface DemoEntry {
   type: EntryType
   occurredOn: Date
@@ -24,25 +29,145 @@ interface DemoEntry {
   body: string
 }
 
-const DEMO_BODIES = [
-  'Утром прогулка, днём немного поработал.',
-  'Посмотрел фильм, приготовил ужин.',
-  'Сходил за продуктами, прибрался дома.',
-  'Почитал перед сном, лёг пораньше.',
-  'Тренировка и долгая прогулка.',
-  'Спокойный день без особых событий.',
-  'Поучил новую тему, порешал задачи.',
-  'Кофе с приятелем, прошлись по центру.',
-  'Разобрал почту, ответил на сообщения.',
-  'Слушал музыку, гулял в парке.',
-  'Пробовал новый рецепт на ужин.',
-  'День дома: отдых и сериал.',
-]
+interface DemoPerson {
+  name: string
+  aliases: string[]
+  description: string | null
+  digest: string | null
+}
+
+interface DemoContent {
+  bodies: string[]
+  reportTitle: string
+  noteTitle: string
+  people: DemoPerson[]
+  projects: { name: string; description: string | null }[]
+  cards: {
+    title: string
+    explanation: string
+    isFavorite: boolean
+    conviction: number
+  }[]
+}
+
+// Demo content per language, so the Journal / People / Cards screens aren't empty.
+const DEMO: Record<Lang, DemoContent> = {
+  en: {
+    bodies: [
+      'Morning walk, worked a bit in the afternoon.',
+      'Watched a film, cooked dinner.',
+      'Did some grocery shopping, tidied up at home.',
+      'Read before bed, turned in early.',
+      'Workout and a long walk.',
+      'A calm day, nothing special.',
+      'Studied a new topic, solved some problems.',
+      'Coffee with a friend, strolled downtown.',
+      'Cleared my inbox, replied to messages.',
+      'Listened to music, walked in the park.',
+      'Tried a new dinner recipe.',
+      'A day at home: rest and a series.',
+    ],
+    reportTitle: 'Weekly summary',
+    noteTitle: 'Note',
+    people: [
+      {
+        name: 'Alex',
+        aliases: ['Lex'],
+        description: 'a friend',
+        digest: 'We meet now and then, chat about neutral topics.',
+      },
+      {
+        name: 'Maria',
+        aliases: [],
+        description: 'an acquaintance',
+        digest: null,
+      },
+    ],
+    projects: [
+      { name: 'Language learning', description: 'a personal study project' },
+    ],
+    cards: [
+      {
+        title: 'I never finish anything',
+        explanation:
+          "It feels like I drop everything halfway.\n\nLooking at the facts:\n— I exercise several times a week, consistently;\n— I finished an online course end to end;\n— I keep a daily routine and a tidy home;\n— I finish books instead of abandoning them midway;\n— I saw through tasks I'd long put off.\n\nConclusion: I finish things more often than it feels in a low moment.",
+        isFavorite: true,
+        conviction: 8,
+      },
+      {
+        title: "If I make a mistake, it's a catastrophe",
+        explanation:
+          "A mistake is data, not a verdict. Most mistakes are fixable, and I've fixed them many times.",
+        isFavorite: true,
+        conviction: 5,
+      },
+      {
+        title: 'Everyone has to like me',
+        explanation:
+          'Being liked by everyone is impossible, and that is fine. Being at peace with my values matters more than pleasing everyone.',
+        isFavorite: false,
+        conviction: 3,
+      },
+    ],
+  },
+  ru: {
+    bodies: [
+      'Утром прогулка, днём немного поработал.',
+      'Посмотрел фильм, приготовил ужин.',
+      'Сходил за продуктами, прибрался дома.',
+      'Почитал перед сном, лёг пораньше.',
+      'Тренировка и долгая прогулка.',
+      'Спокойный день без особых событий.',
+      'Поучил новую тему, порешал задачи.',
+      'Кофе с приятелем, прошлись по центру.',
+      'Разобрал почту, ответил на сообщения.',
+      'Слушал музыку, гулял в парке.',
+      'Пробовал новый рецепт на ужин.',
+      'День дома: отдых и сериал.',
+    ],
+    reportTitle: 'Итоги недели',
+    noteTitle: 'Заметка',
+    people: [
+      {
+        name: 'Аня',
+        aliases: ['Анечка'],
+        description: 'приятельница',
+        digest: 'Иногда видимся, общаемся на нейтральные темы.',
+      },
+      { name: 'Олег', aliases: [], description: 'знакомый', digest: null },
+    ],
+    projects: [
+      { name: 'Изучение языка', description: 'личный учебный проект' },
+    ],
+    cards: [
+      {
+        title: 'Я ничего не довожу до конца',
+        explanation:
+          'Кажется, что я бросаю всё на полпути.\n\nЕсли посмотреть на факты:\n— регулярно занимаюсь спортом несколько раз в неделю;\n— прошёл онлайн-курс до конца;\n— держу режим дня и порядок дома;\n— дочитываю книги, а не бросаю на середине;\n— довёл до результата задачи, которые долго откладывал.\n\nВывод: я довожу дела до конца чаще, чем кажется в плохой момент.',
+        isFavorite: true,
+        conviction: 8,
+      },
+      {
+        title: 'Если ошибусь — это катастрофа',
+        explanation:
+          'Ошибка — это данные, а не приговор. Большинство ошибок исправимы, и я не раз их исправлял.',
+        isFavorite: true,
+        conviction: 5,
+      },
+      {
+        title: 'Я должен всем нравиться',
+        explanation:
+          'Нравиться всем невозможно, и это нормально. Важнее быть в ладу со своими ценностями, чем угождать каждому.',
+        isFavorite: false,
+        conviction: 3,
+      },
+    ],
+  },
+}
 
 // 30 entries counting back from a fixed date (deterministic across re-seeds).
-const DEMO_ENTRIES: DemoEntry[] = Array.from(
-  { length: 30 },
-  (_, i): DemoEntry => {
+function demoEntries(content: DemoContent): DemoEntry[] {
+  return Array.from({ length: 30 }, (_, i): DemoEntry => {
     const occurredOn = new Date('2026-06-17')
     occurredOn.setDate(occurredOn.getDate() - i)
     const isReport = i % 7 === 6
@@ -50,55 +175,11 @@ const DEMO_ENTRIES: DemoEntry[] = Array.from(
     return {
       type: isReport ? 'report' : isNote ? 'note' : 'daily',
       occurredOn,
-      title: isReport ? 'Итоги недели' : isNote ? 'Заметка' : null,
-      body: DEMO_BODIES[i % DEMO_BODIES.length],
+      title: isReport ? content.reportTitle : isNote ? content.noteTitle : null,
+      body: content.bodies[i % content.bodies.length],
     }
-  },
-)
-
-const DEMO_PEOPLE = [
-  {
-    name: 'Alex',
-    aliases: ['Lex'],
-    description: 'приятель',
-    digest: 'Иногда видимся, общаемся на нейтральные темы.',
-  },
-  {
-    name: 'Maria',
-    aliases: [],
-    description: 'знакомая',
-    digest: null,
-  },
-] as const
-
-const DEMO_PROJECTS = [
-  { name: 'Изучение языка', description: 'личный учебный проект' },
-] as const
-
-// CBT cards: trigger thought (title) + reframe (explanation, can be long).
-const DEMO_CARDS = [
-  {
-    title: 'Я ничего не довожу до конца',
-    explanation:
-      'Кажется, что я бросаю всё на полпути.\n\nЕсли посмотреть на факты:\n— регулярно занимаюсь спортом несколько раз в неделю;\n— прошёл онлайн-курс до конца;\n— держу режим дня и порядок дома;\n— дочитываю книги, а не бросаю на середине;\n— довёл до результата задачи, которые долго откладывал.\n\nВывод: я довожу дела до конца чаще, чем кажется в плохой момент.',
-    isFavorite: true,
-    conviction: 8,
-  },
-  {
-    title: 'Если ошибусь — это катастрофа',
-    explanation:
-      'Ошибка — это данные, а не приговор. Большинство ошибок исправимы, и я не раз их исправлял.',
-    isFavorite: true,
-    conviction: 5,
-  },
-  {
-    title: 'Я должен всем нравиться',
-    explanation:
-      'Нравиться всем невозможно, и это нормально. Важнее быть в ладу со своими ценностями, чем угождать каждому.',
-    isFavorite: false,
-    conviction: 3,
-  },
-] as const
+  })
+}
 
 async function main() {
   for (const u of USERS) {
@@ -109,21 +190,19 @@ async function main() {
       create: {
         email: u.email,
         passwordHash,
-        isDemo: u.isDemo,
-        settings: { create: {} }, // defaults: ui_language=ru, theme=system, timezone=UTC
+        isDemo: true,
+        settings: { create: { uiLanguage: u.lang } },
       },
     })
 
     // Starter metric set + default coach pack (shared with the import script).
     await ensureBaseline(prisma, user.id)
 
-    // Demo data — only for the demo account, and only when it's empty
-    // (idempotent; never clobbers real data, never seeds real users).
-    if (
-      u.isDemo &&
-      (await prisma.entry.count({ where: { userId: user.id } })) === 0
-    ) {
-      for (const e of DEMO_ENTRIES) {
+    const content = DEMO[u.lang]
+
+    // Demo data — seeded once, only when empty (idempotent; never clobbers data).
+    if ((await prisma.entry.count({ where: { userId: user.id } })) === 0) {
+      for (const e of demoEntries(content)) {
         await prisma.entry.create({
           data: {
             userId: user.id,
@@ -137,11 +216,8 @@ async function main() {
       }
     }
 
-    if (
-      u.isDemo &&
-      (await prisma.entity.count({ where: { userId: user.id } })) === 0
-    ) {
-      for (const p of DEMO_PEOPLE) {
+    if ((await prisma.entity.count({ where: { userId: user.id } })) === 0) {
+      for (const p of content.people) {
         await prisma.entity.create({
           data: {
             userId: user.id,
@@ -158,7 +234,7 @@ async function main() {
           },
         })
       }
-      for (const pr of DEMO_PROJECTS) {
+      for (const pr of content.projects) {
         await prisma.entity.create({
           data: {
             userId: user.id,
@@ -172,11 +248,8 @@ async function main() {
       }
     }
 
-    if (
-      u.isDemo &&
-      (await prisma.cbtCard.count({ where: { userId: user.id } })) === 0
-    ) {
-      for (const c of DEMO_CARDS) {
+    if ((await prisma.cbtCard.count({ where: { userId: user.id } })) === 0) {
+      for (const c of content.cards) {
         await prisma.cbtCard.create({
           data: {
             userId: user.id,
@@ -189,7 +262,7 @@ async function main() {
       }
     }
 
-    console.log(`seeded user ${user.email} (${user.id})`)
+    console.log(`seeded ${u.lang} demo user ${user.email} (${user.id})`)
   }
 }
 

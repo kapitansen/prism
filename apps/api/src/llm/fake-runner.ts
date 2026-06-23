@@ -22,7 +22,7 @@ export class FakeRunner implements LlmRunner {
   private defaultComplete(): ParseResponse {
     return {
       status: 'complete',
-      summary: 'Разбор дня (заглушка FakeRunner).',
+      summary: 'Day analysis (FakeRunner stub).',
       metrics: [],
       entities: [],
       intents: [],

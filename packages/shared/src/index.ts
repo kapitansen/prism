@@ -33,7 +33,7 @@ export const extractedIntentSchema = z
   .object({ text: z.string().min(1) })
   .strict()
 
-// Free-text by default. `options` may offer one-click answers (e.g. ["Да","Нет"]
+// Free-text by default. `options` may offer one-click answers (e.g. ["Yes","No"]
 // for an entity-confirm question like "Is this @sam_k?"); the chosen option
 // string is sent back as the answer.
 export const clarifyQuestionSchema = z

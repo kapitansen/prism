@@ -47,6 +47,7 @@
     "answer": "Answer",
     "reviewTitle": "Day analysis",
     "summaryLabel": "Summary",
+    "newEntity": "new",
     "commit": "Save analysis",
     "loading": "Loading…",
     "error": "Couldn't load",

@@ -15,7 +15,7 @@ describe('FakeRunner', () => {
     const runner = new FakeRunner()
     runner.enqueue({
       status: 'needs_clarification',
-      clarifyQuestions: [{ question: 'как спал?' }],
+      clarifyQuestions: [{ question: 'how did you sleep?' }],
     })
     const first = parseResponseSchema.parse(
       JSON.parse((await runner.run('p')).text),

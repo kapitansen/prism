@@ -21,7 +21,7 @@ export function mentioned(text: string, names: string[]): boolean {
     // only, so we use a Unicode lookbehind), then the rest of the word.
     const re = new RegExp(`(?<!\\p{L})${escapeRegex(stem)}\\p{L}*`, 'giu')
     for (const m of text.matchAll(re)) {
-      // Reject far-longer words (stem "наст" must not catch "настроение").
+      // Reject far-longer words (stem "sam" must not catch "samurai").
       if (m[0].length <= name.length + 2) return true
     }
     return false
