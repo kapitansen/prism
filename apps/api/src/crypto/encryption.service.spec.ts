@@ -16,8 +16,8 @@ function makeService(key: string = TEST_KEY): EncryptionService {
 describe('EncryptionService', () => {
   it('decrypts back to the original plaintext', () => {
     const svc = makeService()
-    const blob = svc.encrypt('Поругался с Васей')
-    expect(svc.decrypt(blob)).toBe('Поругался с Васей')
+    const blob = svc.encrypt('a sensitive diary line')
+    expect(svc.decrypt(blob)).toBe('a sensitive diary line')
   })
 
   it('produces different ciphertext each time (random IV)', () => {

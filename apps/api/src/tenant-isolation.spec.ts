@@ -105,7 +105,7 @@ describe('Tenant isolation (API)', () => {
     const res = await http()
       .post('/entities')
       .set('Authorization', `Bearer ${token}`)
-      .send({ type: 'person', name: 'Вася' })
+      .send({ type: 'person', name: 'Test Person' })
       .expect(201)
     return res.body.id as string
   }
@@ -281,7 +281,7 @@ describe('Tenant isolation (API)', () => {
       .get(`/entities/${id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
-    expect(res.body.name).toBe('Вася')
+    expect(res.body.name).toBe('Test Person')
   })
 
   it("metrics: A's value is not visible to B", async () => {

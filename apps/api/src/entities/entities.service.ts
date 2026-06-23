@@ -117,7 +117,7 @@ export class EntitiesService {
   }
 
   // Replace @old → @new in every entry body that references it (word-bounded so
-  // @nastya doesn't touch @nastya2). Encrypted text isn't searchable in SQL, so
+  // @alex doesn't touch @alex2). Encrypted text isn't searchable in SQL, so
   // we decrypt each entry in memory, replace, and re-encrypt the changed ones.
   // Rename is a rare, manual action, so the full scan is fine at personal scale.
   private async rewriteHandleInEntries(

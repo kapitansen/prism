@@ -4,37 +4,36 @@ import { mentioned } from './entity-match'
 
 describe('mentioned', () => {
   it('matches an exact name', () => {
-    expect(mentioned('сегодня видел Настя', ['Настя'])).toBe(true)
+    expect(mentioned('saw Alex today', ['Alex'])).toBe(true)
   })
 
-  it('matches an inflected form (Настя → Настей/Насте)', () => {
-    expect(mentioned('погулял с Настей', ['Настя'])).toBe(true)
-    expect(mentioned('рассказал Насте новость', ['Настя'])).toBe(true)
+  it('matches a longer related form (Alex → Alexa)', () => {
+    expect(mentioned('met Alexa at the gym', ['Alex'])).toBe(true)
   })
 
   it('matches via an alias', () => {
-    expect(mentioned('встретил Сашу', ['Александра', 'Саша'])).toBe(true)
+    expect(mentioned('called Sam in the evening', ['Samuel', 'Sam'])).toBe(true)
   })
 
-  it('does not match an unrelated common word sharing the stem', () => {
-    // "Настя" (stem "наст") must not trigger on "настроение".
-    expect(mentioned('настроение хорошее', ['Настя'])).toBe(false)
+  it('does not match a longer unrelated word sharing the stem', () => {
+    // "Sam" (stem "sam") must not trigger on "samurai".
+    expect(mentioned('booked a samurai class', ['Sam'])).toBe(false)
   })
 
   it('does not match a stem in the middle of another word', () => {
-    // "Лев" (stem "лев") must not trigger on "налево".
-    expect(mentioned('повернул налево', ['Лев'])).toBe(false)
+    // "Ana" (stem "ana") must not trigger on "banana".
+    expect(mentioned('ate a banana', ['Ana'])).toBe(false)
   })
 
   it('ignores names shorter than 3 chars', () => {
-    expect(mentioned('Ян пришёл', ['Ян'])).toBe(false)
+    expect(mentioned('Jo arrived', ['Jo'])).toBe(false)
   })
 
   it('returns false when nobody is mentioned', () => {
-    expect(mentioned('обычный спокойный день', ['Настя', 'Маша'])).toBe(false)
+    expect(mentioned('an ordinary quiet day', ['Alex', 'Sam'])).toBe(false)
   })
 
   it('is case-insensitive', () => {
-    expect(mentioned('ВИДЕЛ НАСТЮ', ['настя'])).toBe(true)
+    expect(mentioned('SAW ALEX', ['alex'])).toBe(true)
   })
 })

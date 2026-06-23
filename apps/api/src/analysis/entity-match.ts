@@ -1,10 +1,11 @@
 // Loose name matcher for deciding which people/entities are likely mentioned in
 // a day's text, so we can push their dossiers into the prompt. This is only a
 // heuristic to *surface context* — the LLM does the authoritative matching
-// against the candidate list. Russian inflects names (Настя → Настей), so exact
-// comparison fails; we match a word that starts with the name's stem, but cap
-// the matched word's length so a stem like "наст" catches "Настей" but not the
-// common word "настроение".
+// against the candidate list. Names appear in inflected/extended forms
+// (e.g. Alex → Alexa), so exact comparison fails; we match a word that starts
+// with the name's stem, but cap the matched word's length so a stem like "sam"
+// catches "Sammy" but not the unrelated word "samurai". Works for any script
+// (\p{L}), which matters for inflection-heavy languages like Russian.
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

@@ -34,7 +34,7 @@ export const extractedIntentSchema = z
   .strict()
 
 // Free-text by default. `options` may offer one-click answers (e.g. ["Да","Нет"]
-// for an entity-confirm question like "Вася — это @vas123?"); the chosen option
+// for an entity-confirm question like "Is this @sam_k?"); the chosen option
 // string is sent back as the answer.
 export const clarifyQuestionSchema = z
   .object({

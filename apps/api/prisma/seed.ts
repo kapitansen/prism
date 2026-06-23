@@ -58,13 +58,13 @@ const DEMO_ENTRIES: DemoEntry[] = Array.from(
 
 const DEMO_PEOPLE = [
   {
-    name: 'Алекс',
-    aliases: ['Саша'],
+    name: 'Alex',
+    aliases: ['Lex'],
     description: 'приятель',
     digest: 'Иногда видимся, общаемся на нейтральные темы.',
   },
   {
-    name: 'Мария',
+    name: 'Maria',
     aliases: [],
     description: 'знакомая',
     digest: null,
