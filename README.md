@@ -30,9 +30,9 @@ You write free-text journal entries and track a few numeric metrics over time. A
 ## Monorepo layout
 
 ```
-apps/api          — NestJS backend (REST API today; MCP server + worker next)
+apps/api          — NestJS backend (REST API + AI analysis; MCP server + worker next)
 apps/web          — React frontend
-packages/shared   — shared types & schemas (planned)
+packages/shared   — shared types & zod schemas (the extraction-JSON contract)
 ```
 
 ## Getting started
@@ -50,8 +50,9 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 #    generate JWT_SECRET / ENCRYPTION_KEY with:  openssl rand -hex 32
 
-# 4. Database — apply migrations and seed dev data
-pnpm --filter @prism/api exec prisma migrate dev
+# 4. Database — sync the schema and seed dev data
+#    (development uses `prisma db push`; a baseline migration comes before deploy)
+pnpm --filter @prism/api exec prisma db push
 pnpm --filter @prism/api exec prisma db seed
 
 # 5. Run (two terminals)
@@ -71,6 +72,7 @@ API tests boot the real app and run against a dedicated `prism_test` database �
 
 ## Status
 
-- ✅ **Backend foundation** — schema + migrations, JWT auth + tenant guard, field-level encryption, CRUD for journal entries / entities / numeric metrics, per-account settings.
-- ✅ **Frontend** — login, and settings persisted per account.
-- ⏳ **Next** — the MCP server (context-economical data access for AI agents), the background extraction pipeline, and the dashboard.
+- ✅ **Backend foundation** — schema, JWT auth + tenant guard, field-level encryption, CRUD for journal entries / entities / numeric metrics, per-account settings.
+- ✅ **Frontend** — login, the day editor (text + metric chips), journal, people, CBT cards, settings.
+- ✅ **AI analysis** — entries are parsed into structure (summary, metrics, entities, intents) by Claude behind an `LlmRunner` port; interactive multi-round clarification; per-user "coach pack" tuning; entity `@handle` tagging.
+- ⏳ **Next** — the MCP server (context-economical data access for AI agents) and the dashboard / charts.
