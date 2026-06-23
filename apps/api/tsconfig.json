@@ -2,6 +2,17 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2023",
+    // The MCP SDK ships its subpaths via "exports" (resolved at runtime by Node);
+    // our classic moduleResolution can't read exports maps, so point the two
+    // subpaths we import at their real .d.ts. Emit keeps the original specifier.
+    "paths": {
+      "@modelcontextprotocol/sdk/server/mcp.js": [
+        "./node_modules/@modelcontextprotocol/sdk/dist/cjs/server/mcp"
+      ],
+      "@modelcontextprotocol/sdk/server/streamableHttp.js": [
+        "./node_modules/@modelcontextprotocol/sdk/dist/cjs/server/streamableHttp"
+      ]
+    },
     // This config is for type-checking + the editor only; the build uses
     // tsconfig.build.json. noEmit stops a stray seed.js appearing next to seed.ts.
     "noEmit": true,

@@ -10,6 +10,7 @@ import { CryptoModule } from './crypto/crypto.module'
 import { EntitiesModule } from './entities/entities.module'
 import { EntriesModule } from './entries/entries.module'
 import { LlmModule } from './llm/llm.module'
+import { McpModule } from './mcp/mcp.module'
 import { MetricsModule } from './metrics/metrics.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { SettingsModule } from './settings/settings.module'
@@ -27,6 +28,7 @@ import { SettingsModule } from './settings/settings.module'
     EntriesModule,
     EntitiesModule,
     LlmModule,
+    McpModule,
     MetricsModule,
     SettingsModule,
   ],

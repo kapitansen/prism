@@ -241,6 +241,10 @@ describe('Tenant isolation (API)', () => {
       .expect(400)
   })
 
+  it('mcp: requires a token (401)', async () => {
+    await http().post('/mcp').send({}).expect(401)
+  })
+
   it("entities: B cannot read A's entity (404)", async () => {
     const id = await createEntityAs(tokenA)
     await http()
