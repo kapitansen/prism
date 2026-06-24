@@ -3,6 +3,7 @@ import { type ComponentProps, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CardActions } from '@/components/card-actions'
+import { HeaderActions } from '@/components/header-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -31,22 +32,24 @@ export function ContextPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
-      <div className="flex gap-1">
-        <Button
-          size="sm"
-          variant={tab === 'people' ? 'default' : 'outline'}
-          onClick={() => setTab('people')}
-        >
-          {t('context.people')} ({people.length})
-        </Button>
-        <Button
-          size="sm"
-          variant={tab === 'themes' ? 'default' : 'outline'}
-          onClick={() => setTab('themes')}
-        >
-          {t('context.themes')} ({themes.length})
-        </Button>
-      </div>
+      <HeaderActions>
+        <div className="flex gap-1 rounded-lg border p-1">
+          <Button
+            size="sm"
+            variant={tab === 'people' ? 'default' : 'ghost'}
+            onClick={() => setTab('people')}
+          >
+            {t('context.people')}
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === 'themes' ? 'default' : 'ghost'}
+            onClick={() => setTab('themes')}
+          >
+            {t('context.themes')}
+          </Button>
+        </div>
+      </HeaderActions>
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">{t('people.loading')}</p>

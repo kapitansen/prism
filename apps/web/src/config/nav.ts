@@ -1,10 +1,10 @@
 import {
   Layers,
   type LucideIcon,
+  Network,
   NotebookPen,
   Settings,
   Sun,
-  Users,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -17,7 +17,7 @@ export type NavItem = {
 export const mainNav: NavItem[] = [
   { path: '/', labelKey: 'nav.today', icon: Sun },
   { path: '/journal', labelKey: 'nav.journal', icon: NotebookPen },
-  { path: '/people', labelKey: 'nav.context', icon: Users },
+  { path: '/context', labelKey: 'nav.context', icon: Network },
   { path: '/cards', labelKey: 'nav.cards', icon: Layers },
 ]
 

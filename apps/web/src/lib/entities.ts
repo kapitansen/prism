@@ -16,11 +16,7 @@ export interface Entity {
   createdAt: string
 }
 
-export function fetchPeople() {
-  return api.get<Entity[]>('/entities?type=person')
-}
-
-// All entities (any type) — used for @-mention suggestions in the day text.
+// All entities (any type) — used by the Context page and the @-mention picker.
 export function fetchEntities() {
   return api.get<Entity[]>('/entities')
 }

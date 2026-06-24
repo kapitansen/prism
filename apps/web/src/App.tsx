@@ -26,7 +26,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <TodayPage /> },
       { path: 'journal', element: <JournalPage /> },
-      { path: 'people', element: <ContextPage /> },
+      { path: 'context', element: <ContextPage /> },
       { path: 'cards', element: <CardsPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],
