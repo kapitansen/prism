@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
 import {
   type Extraction,
   extractionSchema,
@@ -40,6 +41,7 @@ export class AnalysisService {
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
     private readonly coachPack: CoachPackService,
+    private readonly jwt: JwtService,
     @Inject(LLM_RUNNER) private readonly llm: LlmRunner,
   ) {}
 
@@ -90,7 +92,8 @@ export class AnalysisService {
       context,
     })
 
-    const result = await this.llm.run(prompt)
+    const mcp = await this.buildMcpAccess(userId)
+    const result = await this.llm.run(prompt, mcp ? { mcp } : undefined)
     const raw = result.text
     const round = state.answeredQa.length
     const runner = process.env.LLM_RUNNER ?? 'claude-code'
@@ -126,6 +129,22 @@ export class AnalysisService {
     state.last = response
     await this.saveState(entry.id, state)
     return response
+  }
+
+  // Short-lived MCP access for the analysis run: a fresh JWT scoped to this user
+  // + our MCP server URL, so the model can call get_entity mid-analysis. Disable
+  // with PRISM_ANALYSIS_MCP=0.
+  private async buildMcpAccess(
+    userId: string,
+  ): Promise<{ url: string; token: string; tools: string[] } | null> {
+    if (process.env.PRISM_ANALYSIS_MCP === '0') return null
+    const port = process.env.PORT ?? '3000'
+    const url = process.env.MCP_URL ?? `http://localhost:${port}/mcp`
+    const token = await this.jwt.signAsync(
+      { sub: userId },
+      { expiresIn: '10m' },
+    )
+    return { url, token, tools: ['mcp__prism__get_entity'] }
   }
 
   // Pull grounding context from the DB (spec layer 5): the user's entities (as

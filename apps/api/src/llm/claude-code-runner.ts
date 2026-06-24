@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 
 import { Injectable, Logger } from '@nestjs/common'
 
-import type { LlmResult, LlmRunner } from './llm-runner.port'
+import type { LlmResult, LlmRunner, LlmRunOptions } from './llm-runner.port'
 
 // The claude --output-format json envelope (only the fields we read).
 interface ClaudeEnvelope {
@@ -27,9 +27,26 @@ export class ClaudeCodeRunner implements LlmRunner {
   private readonly model = process.env.CLAUDE_MODEL // optional; CLI default if unset
   private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 180_000)
 
-  async run(prompt: string): Promise<LlmResult> {
+  async run(prompt: string, opts?: LlmRunOptions): Promise<LlmResult> {
     const args = ['-p', '--output-format', 'json']
     if (this.model) args.push('--model', this.model)
+
+    // Expose our MCP server to the model so it can pull data mid-run. The config
+    // is inline JSON; allowedTools whitelists exactly our tools (no prompting in
+    // headless mode). The Bearer token scopes everything to one user.
+    if (opts?.mcp) {
+      const config = {
+        mcpServers: {
+          prism: {
+            type: 'http',
+            url: opts.mcp.url,
+            headers: { Authorization: `Bearer ${opts.mcp.token}` },
+          },
+        },
+      }
+      args.push('--mcp-config', JSON.stringify(config))
+      if (opts.mcp.tools.length) args.push('--allowedTools', ...opts.mcp.tools)
+    }
 
     const stdout = await this.exec(args, prompt)
     let envelope: ClaudeEnvelope

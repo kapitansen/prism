@@ -14,6 +14,7 @@ export class FakeRunner implements LlmRunner {
     this.queue.push(...responses)
   }
 
+  // opts (e.g. MCP) are ignored — the fake has no real model to use tools.
   run(_prompt: string): Promise<LlmResult> {
     const next = this.queue.shift() ?? this.defaultComplete()
     return Promise.resolve({ text: JSON.stringify(next) })
