@@ -507,6 +507,13 @@ function DayEditor({
     [],
   )
 
+  // A single options-only question submits on click, so the "Answer" button
+  // would be redundant (and looked like a double-press); hide it in that case.
+  const autoSubmitSingle =
+    proposal?.status === 'needs_clarification' &&
+    proposal.clarifyQuestions.length === 1 &&
+    (proposal.clarifyQuestions[0].options?.length ?? 0) > 0
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -655,10 +662,18 @@ function DayEditor({
             </div>
           ))}
           <div className="flex gap-2">
-            <Button size="sm" disabled={busy} onClick={submitAnswers}>
-              {t('today.answer')}
-            </Button>
+            {!autoSubmitSingle && (
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={submitAnswers}
+              >
+                {t('today.answer')}
+              </Button>
+            )}
             <Button
+              type="button"
               size="sm"
               variant="ghost"
               disabled={busy}
