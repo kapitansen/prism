@@ -144,7 +144,11 @@ export class AnalysisService {
       { sub: userId },
       { expiresIn: '10m' },
     )
-    return { url, token, tools: ['mcp__prism__get_entity'] }
+    return {
+      url,
+      token,
+      tools: ['mcp__prism__get_entity', 'mcp__prism__find_entries_mentioning'],
+    }
   }
 
   // Pull grounding context from the DB (spec layer 5): the user's entities (as

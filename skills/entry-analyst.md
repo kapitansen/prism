@@ -20,11 +20,12 @@ the contract below.
     matches one entity, set its `existingId`. If it is **ambiguous or
     uncertain**, do not guess — ask a clarifying question (see below).
   - A new entity — `existingId: null`. Type — `person | project | habit | event`.
-  - **Tool:** if a `get_entity(query)` tool is available, call it to look up an
-    entity's profile (by @handle, name, or alias) when a mention's meaning isn't
-    clear from the text or the pushed context — e.g. to phrase a summary about a
-    person correctly, or to judge what "argued with X again" usually means. Don't
-    invent facts about people; pull them.
+  - **Tools (if available):** `get_entity(query)` — look up an entity's profile
+    (by @handle, name, or alias) when a mention's meaning isn't clear from the
+    text or the pushed context. `find_entries_mentioning(query)` — past entries
+    about an entity, to judge patterns over time (e.g. whether "argued with X
+    again" tends to be constructive or draining). Don't invent facts about
+    people; pull them.
 - **intents** — plans/intentions stated for the future ("want to…",
   "tomorrow…", "need to…"). One short line each.
 - **cbtFlags** — if the entry touches one of the user's CBT cards (list given in
