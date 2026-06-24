@@ -17,9 +17,15 @@ the contract below.
   - **`@handle` in the text** (e.g. `@alex`) is an **exact** reference to the
     entity with that handle. Use its `existingId`, no questions asked.
   - **A bare name** (e.g. "Sam") — match by name and aliases. If it clearly
-    matches one entity, set its `existingId`. If it is **ambiguous or
-    uncertain**, do not guess — ask a clarifying question (see below).
-  - A new entity — `existingId: null`. Type — `person | project | habit | event`.
+    matches one entity, set its `existingId`.
+  - **Never create a duplicate.** Before returning a NEW entity
+    (`existingId: null`) for a person, check the candidate list, their aliases,
+    and `get_entity` — a bare name is very often just an alias/diminutive of
+    someone you already know (e.g. "Ваня" → "Иван"). If it **plausibly** matches
+    an existing entity, do **not** create a new one — **ask** (see clarify
+    below), don't guess.
+  - Only return `existingId: null` for a genuinely new entity (after asking if
+    unsure). Type — `person | project | habit | event`.
   - **Tools (if available):** `get_entity(query)` — look up an entity's profile
     (by @handle, name, or alias) when a mention's meaning isn't clear from the
     text or the pushed context. `find_entries_mentioning(query)` — past entries
@@ -39,11 +45,13 @@ return `complete`. The number and style of questions are governed by
 `analysis_md`.
 
 A question can be **free-form** (no `options` — the user types an answer) or
-**one-click** (`options`, e.g. `["Yes","No"]`). The main case for options is
-**entity confirmation**: if a bare name resembles a known entity, ask
-"Is 'Sam' the same as @sam_k?" with `options`. The answer arrives next round;
-on "Yes" set its `existingId`, on "No" keep it new. Phrase the question and the
-options in the entry's language.
+**one-click** (`options`). The main case for options is **entity confirmation**:
+when a bare name might be someone you already know, ask which one, with `options`
+listing the likely candidate(s) **plus a "new" choice** — e.g.
+"Кто такой(ая) 'Ваня'?" with `options: ["@ivan (Иван)", "Новый человек"]`. The
+answer arrives next round: set `existingId` to the chosen candidate, or keep it
+new if "new" was picked. Prefer this over silently creating a duplicate. Phrase
+the question and options in the entry's language.
 
 ## Response contract (return ONLY JSON)
 
@@ -56,7 +64,7 @@ Needs clarification:
   "status": "needs_clarification",
   "clarifyQuestions": [
     { "question": "a free-form question" },
-    { "question": "Is 'Sam' the same as @sam_k?", "options": ["Yes", "No"] }
+    { "question": "Who is 'Vanya'?", "options": ["@ivan (Ivan)", "New person"] }
   ]
 }
 ```
