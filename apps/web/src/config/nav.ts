@@ -17,7 +17,7 @@ export type NavItem = {
 export const mainNav: NavItem[] = [
   { path: '/', labelKey: 'nav.today', icon: Sun },
   { path: '/journal', labelKey: 'nav.journal', icon: NotebookPen },
-  { path: '/people', labelKey: 'nav.people', icon: Users },
+  { path: '/people', labelKey: 'nav.context', icon: Users },
   { path: '/cards', labelKey: 'nav.cards', icon: Layers },
 ]
 

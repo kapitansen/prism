@@ -3,6 +3,7 @@
     "today": "Сегодня",
     "journal": "Дневник",
     "people": "Люди",
+    "context": "Контекст",
     "cards": "Карточки",
     "settings": "Настройки",
     "toggleSidebar": "Свернуть меню",
@@ -95,6 +96,17 @@
     "statusArchived": "В архиве",
     "periodStart": "Начало",
     "periodEnd": "Конец"
+  },
+  "context": {
+    "people": "Люди",
+    "themes": "Темы",
+    "themesEmpty": "Пока нет тем",
+    "typeLabel": "Тип",
+    "type": {
+      "project": "Проект",
+      "habit": "Привычка",
+      "event": "Событие"
+    }
   },
   "cards": {
     "review": "Просмотр",

@@ -3,6 +3,7 @@
     "today": "Today",
     "journal": "Journal",
     "people": "People",
+    "context": "Context",
     "cards": "Cards",
     "settings": "Settings",
     "toggleSidebar": "Toggle sidebar",
@@ -95,6 +96,17 @@
     "statusArchived": "Archived",
     "periodStart": "Start",
     "periodEnd": "End"
+  },
+  "context": {
+    "people": "People",
+    "themes": "Topics",
+    "themesEmpty": "No topics yet",
+    "typeLabel": "Type",
+    "type": {
+      "project": "Project",
+      "habit": "Habit",
+      "event": "Event"
+    }
   },
   "cards": {
     "review": "Review",

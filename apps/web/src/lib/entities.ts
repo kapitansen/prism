@@ -27,6 +27,7 @@ export function fetchEntities() {
 
 export interface UpdateEntityInput {
   name?: string
+  type?: string
   handle?: string
   aliases?: string[]
   description?: string
