@@ -39,7 +39,9 @@ export function buildParsePrompt(input: {
   skills: Skills
   coach: { analysisMd: string }
   metricDefs: MetricDef[]
-  body: string
+  // The day text is split into two sides; either may be empty.
+  good: string
+  hard: string
   chips: { key: string; value: number }[]
   answers: { question: string; answer: string }[]
   context: ParseContext
@@ -53,6 +55,8 @@ export function buildParsePrompt(input: {
   const qa = input.answers.length
     ? input.answers.map((a) => `Q: ${a.question}\nA: ${a.answer}`).join('\n\n')
     : '—'
+  const good = input.good.trim() ? fence('GOOD', input.good) : '—'
+  const hard = input.hard.trim() ? fence('HARD', input.hard) : '—'
 
   return [
     section(
@@ -68,7 +72,14 @@ export function buildParsePrompt(input: {
         `Metrics the user already marked (chips): ${chips}`,
         'No need to extract those again.',
         '',
-        `Day text:\n${input.body}`,
+        'The day is written in two parallel sides. GOOD = what went well /',
+        'achievements. HARD = difficulties: regretted actions, recurring negative',
+        'thoughts, and bad events the user did not choose. Either side may be',
+        'empty; an empty HARD side is normal and is not a problem to flag.',
+        '',
+        `What went well (GOOD):\n${good}`,
+        '',
+        `Difficulties (HARD):\n${hard}`,
         '',
         `Answers to clarifying questions:\n${qa}`,
       ].join('\n'),

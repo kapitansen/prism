@@ -73,7 +73,12 @@ model Entry {
   type         EntryType
   origin       EntryOrigin
   titleEnc     String?      @map("title_enc")
-  bodyEnc      String       @map("body_enc")
+  // The day text is split into two parallel fields: "good" (what went well) and
+  // "hard" (difficulties — regretted actions, recurring negative thoughts, bad
+  // events). Both nullable: a day may have only one side. At least one is
+  // enforced in the DTO, not the DB.
+  goodEnc      String?      @map("good_enc")
+  hardEnc      String?      @map("hard_enc")
   summaryEnc   String?      @map("summary_enc")
   // Encrypted JSON of the in-progress/last analysis (Q&A rounds + proposal);
   // scratch until ingest_status = parsed, then kept as history.
@@ -97,6 +102,9 @@ model Entity {
   id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String       @map("user_id") @db.Uuid
   type            EntityType
+  // The author's own "@me" card: exactly one per user, always injected into the
+  // analysis prompt, not deletable. Otherwise a normal person entity.
+  isSelf          Boolean      @default(false) @map("is_self")
   nameEnc         String       @map("name_enc")
   // Unique @-handle for precise tagging in entry text (e.g. @alex). Encrypted
   // like the name; uniqueness is enforced in app code (decrypt + compare), not

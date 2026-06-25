@@ -129,17 +129,20 @@ export class EntitiesService {
     const re = new RegExp(`@${escaped}\\b`, 'g')
     const entries = await this.prisma.entry.findMany({
       where: { userId },
-      select: { id: true, bodyEnc: true },
+      select: { id: true, goodEnc: true, hardEnc: true },
     })
     for (const e of entries) {
-      const body = this.encryption.decrypt(e.bodyEnc)
-      if (!body.includes(`@${oldHandle}`)) continue
-      const next = body.replace(re, `@${newHandle}`)
-      if (next !== body) {
-        await this.prisma.entry.update({
-          where: { id: e.id },
-          data: { bodyEnc: this.encryption.encrypt(next) },
-        })
+      const patch: { goodEnc?: string; hardEnc?: string } = {}
+      for (const side of ['goodEnc', 'hardEnc'] as const) {
+        const enc = e[side]
+        if (!enc) continue
+        const text = this.encryption.decrypt(enc)
+        if (!text.includes(`@${oldHandle}`)) continue
+        const next = text.replace(re, `@${newHandle}`)
+        if (next !== text) patch[side] = this.encryption.encrypt(next)
+      }
+      if (Object.keys(patch).length) {
+        await this.prisma.entry.update({ where: { id: e.id }, data: patch })
       }
     }
   }

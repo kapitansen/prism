@@ -105,7 +105,9 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [full, setFull] = useState(false)
-  const [body, setBody] = useState(entry.body)
+  // The inline editor here only handles non-daily entries (free text → `good`);
+  // daily entries reuse the two-column DayInputPanel below.
+  const [good, setGood] = useState(entry.good ?? '')
   const [title, setTitle] = useState(entry.title ?? '')
   const [summary, setSummary] = useState(entry.summary ?? '')
   const [type, setType] = useState(entry.type)
@@ -120,7 +122,7 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
   }
   const save = useMutation({
     mutationFn: () => {
-      const patch: UpdateEntryInput = { body }
+      const patch: UpdateEntryInput = { good }
       // Title/summary/type/dates are only touched in full mode.
       if (full) {
         patch.title = title
@@ -217,8 +219,8 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
           )}
 
           <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
+            value={good}
+            onChange={(e) => setGood(e.target.value)}
             rows={5}
             className="focus-visible:ring-ring/50 min-h-28 rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
           />
@@ -241,7 +243,7 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
             <Button
               type="submit"
               size="sm"
-              disabled={save.isPending || !body.trim()}
+              disabled={save.isPending || !good.trim()}
             >
               {t('common.save')}
             </Button>
@@ -270,8 +272,32 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
         <span className="rounded bg-muted px-1.5 py-0.5">{entry.type}</span>
       </div>
       {entry.title && <h2 className="font-medium">{entry.title}</h2>}
-      <p className="whitespace-pre-wrap text-sm">{entry.body}</p>
+      {entry.type === 'daily' ? (
+        // Two sides side by side — an empty/short "hard" column is the
+        // at-a-glance asymmetry we want to keep visible.
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <DaySide label={t('today.goodLabel')} text={entry.good} />
+          <DaySide label={t('today.hardLabel')} text={entry.hard} />
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap text-sm">
+          {[entry.good, entry.hard].filter(Boolean).join('\n\n')}
+        </p>
+      )}
     </article>
+  )
+}
+
+function DaySide({ label, text }: { label: string; text: string | null }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {text?.trim() ? (
+        <p className="whitespace-pre-wrap text-sm">{text}</p>
+      ) : (
+        <p className="text-sm text-muted-foreground/50">—</p>
+      )}
+    </div>
   )
 }
 

@@ -96,7 +96,7 @@ describe('Tenant isolation (API)', () => {
     const res = await http()
       .post('/entries')
       .set('Authorization', `Bearer ${token}`)
-      .send({ type: 'daily', body: 'secret', occurredOn: '2026-06-16' })
+      .send({ type: 'daily', good: 'secret', occurredOn: '2026-06-16' })
       .expect(201)
     return res.body.id as string
   }
@@ -162,27 +162,27 @@ describe('Tenant isolation (API)', () => {
     expect(res.body).toHaveLength(1)
   })
 
-  it("B cannot update A's entry; A's body is unchanged", async () => {
+  it("B cannot update A's entry; A's text is unchanged", async () => {
     const id = await createEntryAs(tokenA)
     await http()
       .patch(`/entries/${id}`)
       .set('Authorization', `Bearer ${tokenB}`)
-      .send({ body: 'hacked by B' })
+      .send({ good: 'hacked by B' })
       .expect(404)
     const res = await http()
       .get(`/entries/${id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
-    expect(res.body.body).toBe('secret')
+    expect(res.body.good).toBe('secret')
   })
 
-  it('A reads back their own entry with the body decrypted', async () => {
+  it('A reads back their own entry with the text decrypted', async () => {
     const id = await createEntryAs(tokenA)
     const res = await http()
       .get(`/entries/${id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200)
-    expect(res.body.body).toBe('secret')
+    expect(res.body.good).toBe('secret')
   })
 
   it('rejects a garbage token (401)', async () => {
@@ -360,7 +360,7 @@ describe('Tenant isolation (API)', () => {
       http()
         .post('/entries')
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({ type, body: 'x', occurredOn })
+        .send({ type, good: 'x', occurredOn })
         .expect(201)
     await post('daily', '2026-06-18')
     await post('note', '2026-06-18')

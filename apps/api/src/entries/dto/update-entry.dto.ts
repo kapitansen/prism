@@ -1,14 +1,9 @@
 import { EntryType } from '@prisma/client'
-import {
-  IsDateString,
-  IsEnum,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator'
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator'
 
 // All optional — a PATCH may touch any subset. (Nest's PartialType from
 // @nestjs/mapped-types could derive this from CreateEntryDto; kept explicit here.)
+// Passing an empty string for good/hard clears that side.
 export class UpdateEntryDto {
   @IsOptional()
   @IsEnum(EntryType)
@@ -16,8 +11,11 @@ export class UpdateEntryDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(1)
-  body?: string
+  good?: string
+
+  @IsOptional()
+  @IsString()
+  hard?: string
 
   @IsOptional()
   @IsString()

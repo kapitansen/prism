@@ -1,12 +1,14 @@
 import { api } from './api'
 
-// Matches the backend GET /entries list item.
+// Matches the backend GET /entries list item. The day text is split into two
+// sides — `good` (pros / what went well) and `hard` (cons / difficulties).
 export interface EntryListItem {
   id: string
   type: string
   origin: string
   title: string | null
-  body: string
+  good: string | null
+  hard: string | null
   summary: string | null
   occurredOn: string
   occurredTo: string | null
@@ -28,7 +30,8 @@ export function fetchEntries(
 
 export function createEntry(input: {
   type: string
-  body: string
+  good?: string
+  hard?: string
   occurredOn: string
   occurredTo?: string
   title?: string
@@ -37,7 +40,8 @@ export function createEntry(input: {
 }
 
 export interface UpdateEntryInput {
-  body?: string
+  good?: string
+  hard?: string
   title?: string
   summary?: string
   type?: string

@@ -1,20 +1,21 @@
 import { EntryType } from '@prisma/client'
-import {
-  IsDateString,
-  IsEnum,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator'
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator'
 
-// `body`/`title` are plaintext here; the service encrypts them into *_enc.
+// Plaintext here; the service encrypts text fields into *_enc. The day text is
+// split into two parallel sides — `good` (what went well) and `hard`
+// (difficulties). Both optional at the type level; the service rejects a create
+// where both are empty (an entry must carry at least one side).
 export class CreateEntryDto {
   @IsEnum(EntryType)
   type!: EntryType
 
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  body!: string
+  good?: string
+
+  @IsOptional()
+  @IsString()
+  hard?: string
 
   @IsOptional()
   @IsString()

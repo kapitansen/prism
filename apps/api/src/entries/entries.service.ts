@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { Entry, Prisma } from '@prisma/client'
 
 import { EncryptionService } from '../crypto/encryption.service'
@@ -15,9 +19,11 @@ export class EntriesService {
   ) {}
 
   async create(userId: string, dto: CreateEntryDto) {
+    // An entry must carry at least one side of the day.
+    if (!dto.good?.trim() && !dto.hard?.trim()) {
+      throw new BadRequestException('Entry needs a "good" or "hard" text')
+    }
     const entry = await this.prisma.entry.create({
-      // On create `body` is always present (validated), so toData() always
-      // yields bodyEnc here — the cast asserts what's true at runtime.
       data: {
         userId,
         origin: 'web',
@@ -86,7 +92,13 @@ export class EntriesService {
   ): Prisma.EntryUpdateManyMutationInput {
     const data: Prisma.EntryUpdateManyMutationInput = {}
     if (dto.type !== undefined) data.type = dto.type
-    if (dto.body !== undefined) data.bodyEnc = this.encryption.encrypt(dto.body)
+    // Empty string clears a side (stored as NULL), like title/summary.
+    if (dto.good !== undefined) {
+      data.goodEnc = dto.good ? this.encryption.encrypt(dto.good) : null
+    }
+    if (dto.hard !== undefined) {
+      data.hardEnc = dto.hard ? this.encryption.encrypt(dto.hard) : null
+    }
     if (dto.title !== undefined) {
       data.titleEnc = dto.title ? this.encryption.encrypt(dto.title) : null
     }
@@ -110,7 +122,8 @@ export class EntriesService {
       type: e.type,
       origin: e.origin,
       title: e.titleEnc ? this.encryption.decrypt(e.titleEnc) : null,
-      body: this.encryption.decrypt(e.bodyEnc),
+      good: e.goodEnc ? this.encryption.decrypt(e.goodEnc) : null,
+      hard: e.hardEnc ? this.encryption.decrypt(e.hardEnc) : null,
       summary: e.summaryEnc ? this.encryption.decrypt(e.summaryEnc) : null,
       occurredOn: e.occurredOn,
       occurredTo: e.occurredTo,
@@ -128,7 +141,8 @@ export class EntriesService {
       title: e.titleEnc ? this.encryption.decrypt(e.titleEnc) : null,
       // The web feed shows content; the future MCP layer keeps its own
       // body-less, index-first responses.
-      body: this.encryption.decrypt(e.bodyEnc),
+      good: e.goodEnc ? this.encryption.decrypt(e.goodEnc) : null,
+      hard: e.hardEnc ? this.encryption.decrypt(e.hardEnc) : null,
       summary: e.summaryEnc ? this.encryption.decrypt(e.summaryEnc) : null,
       occurredOn: e.occurredOn,
       occurredTo: e.occurredTo,
