@@ -417,7 +417,13 @@ function DayEditor({
     try {
       let saved
       if (entryId.current) {
-        saved = await updateEntry(entryId.current, { good: g, hard: h })
+        // Persist the range here too: a range set after the entry was first
+        // created (its text autosaved) would otherwise never be stored.
+        saved = await updateEntry(entryId.current, {
+          good: g,
+          hard: h,
+          ...(to ? { occurredTo: to } : {}),
+        })
       } else {
         saved = await createEntry({
           type: 'daily',

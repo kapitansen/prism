@@ -3,7 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -268,8 +268,19 @@ function EntryCard({ entry }: { entry: EntryListItem }) {
         onDelete={() => remove.mutate()}
       />
       <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-        <time dateTime={entry.occurredOn}>{formatDate(entry.occurredOn)}</time>
+        <time dateTime={entry.occurredOn}>
+          {formatDate(entry.occurredOn)}
+          {entry.occurredTo &&
+            entry.occurredTo.slice(0, 10) !== entry.occurredOn.slice(0, 10) &&
+            ` – ${formatDate(entry.occurredTo)}`}
+        </time>
         <span className="rounded bg-muted px-1.5 py-0.5">{entry.type}</span>
+        {entry.ingestStatus === 'parsed' && (
+          <Sparkles
+            className="size-3.5 text-primary"
+            aria-label={t('journal.parsed')}
+          />
+        )}
       </div>
       {entry.title && <h2 className="font-medium">{entry.title}</h2>}
       {entry.type === 'daily' ? (

@@ -75,6 +75,7 @@
     "error": "Couldn't load entries",
     "empty": "No entries yet",
     "addEntry": "Add entry",
+    "parsed": "Analyzed by AI",
     "title": "Title",
     "summary": "Summary",
     "summaryAiHint": "usually AI-maintained — edit if needed",
