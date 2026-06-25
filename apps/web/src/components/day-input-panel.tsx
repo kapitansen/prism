@@ -146,8 +146,13 @@ export function DayInputPanel({
       d.enabled && d.scaleMin !== null && d.scaleMax !== null,
   )
 
-  const valueFor = (key: string) =>
-    valuesQuery.data?.find((v) => v.metricKey === key)?.value ?? null
+  // A chip shows the manual rating if set, otherwise the AI-extracted value
+  // (both can exist for one key/day).
+  const valueFor = (key: string) => {
+    const forKey = valuesQuery.data?.filter((v) => v.metricKey === key) ?? []
+    const manual = forKey.find((v) => v.source === 'manual')
+    return (manual ?? forKey[0])?.value ?? null
+  }
 
   function label(d: MetricDefinition) {
     const key = `today.metric.${d.key}`
@@ -515,8 +520,12 @@ function DayEditor({
       })
       setParsed(true)
       setProposal(null)
+      // Reflect the just-committed analysis without a reload: the AI summary in
+      // the full-edit form, and the extracted metric chips.
+      setEditSummary(summary)
       void queryClient.invalidateQueries({ queryKey: ['entries'] })
       void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
+      void queryClient.invalidateQueries({ queryKey: ['metric-values'] })
     } finally {
       setBusy(false)
     }
