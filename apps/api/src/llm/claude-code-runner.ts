@@ -25,7 +25,9 @@ export class ClaudeCodeRunner implements LlmRunner {
   private readonly logger = new Logger(ClaudeCodeRunner.name)
   private readonly bin = process.env.CLAUDE_BIN ?? 'claude'
   private readonly model = process.env.CLAUDE_MODEL // optional; CLI default if unset
-  private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 180_000)
+  // Analysis with MCP tool-use is variable (tens of seconds to a few minutes
+  // depending on how many entities the model looks up); 180s proved too tight.
+  private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 300_000)
 
   async run(prompt: string, opts?: LlmRunOptions): Promise<LlmResult> {
     const args = ['-p', '--output-format', 'json']
