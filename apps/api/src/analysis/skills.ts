@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // The fixed analysis methodology lives in `skills/` at the repo root (shared and
@@ -12,15 +12,29 @@ export interface Skills {
   entryAnalyst: string
 }
 
-// Read once and cache: skills change only on deploy (a restart picks them up).
-let cache: Skills | null = null
+// Read once per variant and cache: skills change only on deploy (a restart picks
+// them up). `local` uses the git-ignored `*.local.md` working copies when present
+// (Eugene edits the methodology in Russian there); `base` always uses the
+// committed English `*.md`.
+const cache: Record<'base' | 'local', Skills | null> = {
+  base: null,
+  local: null,
+}
 
-export function loadSkills(): Skills {
-  if (!cache) {
-    cache = {
-      core: readFileSync(join(SKILLS_DIR, 'core.md'), 'utf8'),
-      entryAnalyst: readFileSync(join(SKILLS_DIR, 'entry-analyst.md'), 'utf8'),
-    }
+// Read `<name>.md`, or its `<name>.local.md` twin when preferLocal and it exists.
+function readSkill(name: string, preferLocal: boolean): string {
+  if (preferLocal) {
+    const local = join(SKILLS_DIR, `${name}.local.md`)
+    if (existsSync(local)) return readFileSync(local, 'utf8')
   }
-  return cache
+  return readFileSync(join(SKILLS_DIR, `${name}.md`), 'utf8')
+}
+
+export function loadSkills(preferLocal = false): Skills {
+  const key = preferLocal ? 'local' : 'base'
+  cache[key] ??= {
+    core: readSkill('core', preferLocal),
+    entryAnalyst: readSkill('entry-analyst', preferLocal),
+  }
+  return cache[key]
 }

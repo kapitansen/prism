@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   CalendarDays,
   CalendarRange,
+  Check,
   ChevronLeft,
   ChevronRight,
   X,
@@ -304,7 +305,8 @@ export function DayInputPanel({
             date={date}
             to={isRange ? rangeTo : null}
             initialId={dayQuery.data?.id ?? null}
-            initialText={dayQuery.data?.body ?? ''}
+            initialGood={dayQuery.data?.good ?? ''}
+            initialHard={dayQuery.data?.hard ?? ''}
             initialStatus={dayQuery.data?.ingestStatus ?? 'draft'}
             initialTitle={dayQuery.data?.title ?? ''}
             initialSummary={dayQuery.data?.summary ?? ''}
@@ -325,7 +327,8 @@ function DayEditor({
   date,
   to,
   initialId,
-  initialText,
+  initialGood,
+  initialHard,
   initialStatus,
   initialTitle,
   initialSummary,
@@ -334,7 +337,8 @@ function DayEditor({
   date: string
   to: string | null
   initialId: string | null
-  initialText: string
+  initialGood: string
+  initialHard: string
   initialStatus: string
   initialTitle: string
   initialSummary: string
@@ -342,7 +346,8 @@ function DayEditor({
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [text, setText] = useState(initialText)
+  const [good, setGood] = useState(initialGood)
+  const [hard, setHard] = useState(initialHard)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>(
     'idle',
   )
@@ -359,14 +364,24 @@ function DayEditor({
   const [proposal, setProposal] = useState<ParseResponse | null>(null)
   const [answers, setAnswers] = useState<string[]>([]) // current round inputs
   const [summary, setSummary] = useState('') // editable in review
+  // Per proposed-entity decision (by index): 'skip' (default — never auto-create),
+  // 'new' (create it), or an existing entity id (link to it). Nothing is created
+  // unless the user picks 'new' here.
+  const [entityChoices, setEntityChoices] = useState<Record<number, string>>({})
   const [busy, setBusy] = useState(false)
 
   const entryId = useRef(initialId)
   const inFlight = useRef(false)
-  const pending = useRef<string | null>(null)
+  // A change landed while a save was in flight → re-flush once it returns.
+  const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [lastSaved, setLastSaved] = useState(initialText)
-  const dirty = text !== lastSaved
+  // Refs hold the latest text so the debounced flush never reads a stale value.
+  const goodRef = useRef(initialGood)
+  const hardRef = useRef(initialHard)
+  const [lastSavedGood, setLastSavedGood] = useState(initialGood)
+  const [lastSavedHard, setLastSavedHard] = useState(initialHard)
+  const dirty = good !== lastSavedGood || hard !== lastSavedHard
+  const hasText = good.trim().length > 0 || hard.trim().length > 0
 
   // Entities with a handle → @-mention suggestions for the day text.
   const entitiesQuery = useQuery({
@@ -382,11 +397,14 @@ function DayEditor({
     void queryClient.invalidateQueries({ queryKey: ['entries'] })
   }
 
-  // Serialize saves: create-or-update, coalescing edits made mid-request.
-  async function flush(value: string) {
-    if (!value.trim()) return
+  // Serialize saves: create-or-update both sides, coalescing edits made
+  // mid-request. Reads the latest values from refs (not stale closure state).
+  async function flush() {
+    const g = goodRef.current
+    const h = hardRef.current
+    if (!g.trim() && !h.trim()) return // can't create an empty entry
     if (inFlight.current) {
-      pending.current = value
+      pending.current = true
       return
     }
     inFlight.current = true
@@ -394,37 +412,52 @@ function DayEditor({
     try {
       let saved
       if (entryId.current) {
-        saved = await updateEntry(entryId.current, { body: value })
+        saved = await updateEntry(entryId.current, { good: g, hard: h })
       } else {
         saved = await createEntry({
           type: 'daily',
-          body: value,
+          good: g,
+          hard: h,
           occurredOn: date,
           occurredTo: to ?? undefined,
         })
         entryId.current = saved.id
       }
       syncCaches(saved)
-      setLastSaved(value)
+      setLastSavedGood(g)
+      setLastSavedHard(h)
       setSaveStatus('saved')
     } finally {
       inFlight.current = false
-      const next = pending.current
-      pending.current = null
-      if (next !== null && next !== value) void flush(next)
+      if (pending.current) {
+        pending.current = false
+        void flush()
+      }
     }
   }
 
-  function onChange(value: string) {
-    setText(value)
+  // Schedule a debounced save after either side changes.
+  function touch() {
     setSaveStatus('idle')
     if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => void flush(value), AUTOSAVE_MS)
+    timer.current = setTimeout(() => void flush(), AUTOSAVE_MS)
+  }
+
+  function onChangeGood(value: string) {
+    setGood(value)
+    goodRef.current = value
+    touch()
+  }
+
+  function onChangeHard(value: string) {
+    setHard(value)
+    hardRef.current = value
+    touch()
   }
 
   async function saveNow() {
     if (timer.current) clearTimeout(timer.current)
-    await flush(text)
+    await flush()
   }
 
   // One parse round: ensure the text is saved, then ask the server. First call
@@ -441,8 +474,10 @@ function DayEditor({
         roundAnswers ? { answers: roundAnswers } : {},
       )
       setProposal(res)
-      if (res.status === 'complete') setSummary(res.summary)
-      else setAnswers(res.clarifyQuestions.map(() => ''))
+      if (res.status === 'complete') {
+        setSummary(res.summary)
+        setEntityChoices({}) // fresh proposal → default every new entity to skip
+      } else setAnswers(res.clarifyQuestions.map(() => ''))
     } finally {
       setBusy(false)
     }
@@ -460,12 +495,21 @@ function DayEditor({
 
   async function commit() {
     if (!entryId.current || proposal?.status !== 'complete') return
+    // Apply per-entity decisions: parser-linked entities are kept; for the rest,
+    // 'skip' drops them, 'new' creates, an id links to that existing entity.
+    const entities = proposal.entities.flatMap((e, i) => {
+      if (e.existingId) return [e]
+      const choice = entityChoices[i] ?? 'skip'
+      if (choice === 'skip') return []
+      if (choice === 'new') return [e]
+      return [{ ...e, existingId: choice }]
+    })
     setBusy(true)
     try {
       await commitEntry(entryId.current, {
         summary,
         metrics: proposal.metrics,
-        entities: proposal.entities,
+        entities,
         intents: proposal.intents,
         cbtFlags: proposal.cbtFlags,
       })
@@ -544,14 +588,35 @@ function DayEditor({
           </div>
         </div>
       </div>
-      <MentionTextarea
-        value={text}
-        onChange={onChange}
-        options={mentionOptions}
-        placeholder={t('today.dayPlaceholder')}
-        rows={6}
-        className={`min-h-32 w-full ${ANALYSIS_FIELD}`}
-      />
+      {/* Two parallel sides of the day, shown side by side (stack on mobile). */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-muted-foreground">
+            {t('today.goodLabel')}
+          </span>
+          <MentionTextarea
+            value={good}
+            onChange={onChangeGood}
+            options={mentionOptions}
+            placeholder={t('today.goodPlaceholder')}
+            rows={6}
+            className={`min-h-32 w-full ${ANALYSIS_FIELD}`}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-muted-foreground">
+            {t('today.hardLabel')}
+          </span>
+          <MentionTextarea
+            value={hard}
+            onChange={onChangeHard}
+            options={mentionOptions}
+            placeholder={t('today.hardPlaceholder')}
+            rows={6}
+            className={`min-h-32 w-full ${ANALYSIS_FIELD}`}
+          />
+        </div>
+      </div>
 
       {full && (
         <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
@@ -701,13 +766,52 @@ function DayEditor({
             </p>
           )}
           {proposal.entities.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {proposal.entities
-                .map((e) =>
-                  e.existingId ? e.name : `${e.name} (${t('today.newEntity')})`,
-                )
-                .join(', ')}
-            </p>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t('today.entitiesTitle')}
+              </span>
+              {proposal.entities.map((e, i) =>
+                e.existingId ? (
+                  // Parser already linked it to an existing entity — nothing
+                  // gets created, so just show it.
+                  <p key={i} className="flex items-center gap-1.5 text-sm">
+                    <Check className="size-3.5 text-muted-foreground" />
+                    <span>{e.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t('today.entityLinked')}
+                    </span>
+                  </p>
+                ) : (
+                  // New mention — never created unless the user opts in here.
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {e.name}
+                    </span>
+                    <select
+                      className={ANALYSIS_FIELD}
+                      value={entityChoices[i] ?? 'skip'}
+                      onChange={(ev) =>
+                        setEntityChoices((c) => ({
+                          ...c,
+                          [i]: ev.target.value,
+                        }))
+                      }
+                    >
+                      <option value="skip">{t('today.entitySkip')}</option>
+                      <option value="new">{t('today.entityCreate')}</option>
+                      {(entitiesQuery.data ?? [])
+                        .filter((x) => x.type === e.type)
+                        .map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {t('today.entityLinkTo')}: {x.name}
+                            {x.handle ? ` @${x.handle}` : ''}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                ),
+              )}
+            </div>
           )}
           <div className="flex gap-2">
             <Button
@@ -737,7 +841,7 @@ function DayEditor({
           {dirty ? (
             <Button
               size="sm"
-              disabled={!text.trim()}
+              disabled={!hasText}
               onClick={() => void saveNow()}
             >
               {t('today.save')}
@@ -746,7 +850,7 @@ function DayEditor({
             <Button
               size="sm"
               variant={parsed ? 'outline' : 'default'}
-              disabled={!text.trim() || busy}
+              disabled={!hasText || busy}
               onClick={() => void runRound()}
             >
               {busy

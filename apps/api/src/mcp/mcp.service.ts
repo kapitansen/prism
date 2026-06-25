@@ -79,6 +79,48 @@ export class McpService {
       },
     )
 
+    server.registerTool(
+      'update_entity',
+      {
+        title: 'Update an entity profile',
+        description:
+          'Update the AI profile (digest) of a person/project/habit/event the ' +
+          'user ALREADY has, found by @handle, name, or alias. Use it when an ' +
+          'entry holds durable information worth remembering (e.g. a new fact ' +
+          'about someone). First read the current profile with get_entity, merge ' +
+          'in the new facts, and pass the FULL updated profile — it replaces the ' +
+          'old digest. Never creates an entity; if none matches it does nothing.',
+        inputSchema: {
+          query: z
+            .string()
+            .describe('A @handle, name, or alias of an existing entity'),
+          digest: z
+            .string()
+            .min(1)
+            .describe('The full updated profile text (replaces the old one)'),
+        },
+      },
+      async ({ query, digest }: { query: string; digest: string }) => {
+        const e = this.match(await this.loadEntities(userId), query)
+        if (!e) {
+          return { content: [{ type: 'text', text: notFound(query) }] }
+        }
+        // Scope by userId too (defence in depth — e.id is already the user's).
+        await this.prisma.entity.updateMany({
+          where: { id: e.id, userId },
+          data: {
+            digestEnc: this.encryption.encrypt(digest),
+            digestUpdatedAt: new Date(),
+          },
+        })
+        return {
+          content: [
+            { type: 'text', text: `Updated the profile of ${e.name}.` },
+          ],
+        }
+      },
+    )
+
     return server
   }
 
@@ -138,7 +180,9 @@ export class McpService {
 
     const hits: string[] = []
     for (const en of entries) {
-      const body = this.encryption.decrypt(en.bodyEnc)
+      const good = en.goodEnc ? this.encryption.decrypt(en.goodEnc) : ''
+      const hard = en.hardEnc ? this.encryption.decrypt(en.hardEnc) : ''
+      const body = [good, hard].filter(Boolean).join('\n\n')
       if (!(handleRe?.test(body) || mentioned(body, names))) continue
       const snippet = en.summaryEnc
         ? this.encryption.decrypt(en.summaryEnc)

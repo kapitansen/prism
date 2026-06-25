@@ -21,6 +21,18 @@ export function fetchEntities() {
   return api.get<Entity[]>('/entities')
 }
 
+export interface CreateEntityInput {
+  type: string
+  name: string
+  handle?: string
+  aliases?: string[]
+  description?: string
+}
+
+export function createEntity(input: CreateEntityInput) {
+  return api.post<Entity>('/entities', input)
+}
+
 export interface UpdateEntityInput {
   name?: string
   type?: string

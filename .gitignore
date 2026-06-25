@@ -26,8 +26,10 @@ apps/api/prisma/import.ts
 personal/
 backups/
 
-# Personal, non-committed notes (mentoring rules etc.)
+# Personal, non-committed notes (mentoring rules etc.) and any *.local.md twin
+# (e.g. skills/*.local.md — local working translations of the AI-settings files).
 CLAUDE.local.md
+*.local.md
 
 # Russian planning spec — kept local; the public showcase is English docs/README
 spec.md

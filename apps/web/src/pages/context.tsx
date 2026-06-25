@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import { type ComponentProps, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -7,6 +8,8 @@ import { HeaderActions } from '@/components/header-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  createEntity,
+  type CreateEntityInput,
   deleteEntity,
   type Entity,
   fetchEntities,
@@ -21,6 +24,7 @@ const entitiesKey = ['entities'] as const
 export function ContextPage() {
   const { t } = useTranslation()
   const [tab, setTab] = useState<'people' | 'themes'>('people')
+  const [adding, setAdding] = useState(false)
   const { data, isLoading, isError } = useQuery({
     queryKey: entitiesKey,
     queryFn: fetchEntities,
@@ -30,6 +34,13 @@ export function ContextPage() {
   const themes = entities.filter((e) => e.type !== 'person')
   const list = tab === 'people' ? people : themes
 
+  // Switching tabs drops a half-filled create form so it can't leak to the
+  // other type.
+  function switchTab(next: 'people' | 'themes') {
+    setTab(next)
+    setAdding(false)
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
       <HeaderActions>
@@ -37,19 +48,32 @@ export function ContextPage() {
           <Button
             size="sm"
             variant={tab === 'people' ? 'default' : 'ghost'}
-            onClick={() => setTab('people')}
+            onClick={() => switchTab('people')}
           >
             {t('context.people')}
           </Button>
           <Button
             size="sm"
             variant={tab === 'themes' ? 'default' : 'ghost'}
-            onClick={() => setTab('themes')}
+            onClick={() => switchTab('themes')}
           >
             {t('context.themes')}
           </Button>
         </div>
       </HeaderActions>
+
+      {adding ? (
+        <AddForm tab={tab} onDone={() => setAdding(false)} />
+      ) : (
+        <Button
+          variant="outline"
+          className="gap-2 self-start"
+          onClick={() => setAdding(true)}
+        >
+          <Plus className="size-4" />
+          {tab === 'people' ? t('context.addPerson') : t('context.addTheme')}
+        </Button>
+      )}
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">{t('people.loading')}</p>
@@ -73,6 +97,90 @@ export function ContextPage() {
         )}
       </div>
     </div>
+  )
+}
+
+// Create a new entity in the active tab: a person (with optional @handle) or a
+// theme (with a type select). Mirrors the edit form's fields.
+function AddForm({
+  tab,
+  onDone,
+}: {
+  tab: 'people' | 'themes'
+  onDone: () => void
+}) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [name, setName] = useState('')
+  const [handle, setHandle] = useState('')
+  const [type, setType] = useState('project')
+  const [aliases, setAliases] = useState('')
+  const [description, setDescription] = useState('')
+
+  const create = useMutation({
+    mutationFn: () => {
+      const input: CreateEntityInput = {
+        type: tab === 'people' ? 'person' : type,
+        name,
+        aliases: splitAliases(aliases),
+        description,
+      }
+      if (tab === 'people' && handle.trim()) input.handle = handle.trim()
+      return createEntity(input)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: entitiesKey })
+      onDone()
+    },
+  })
+
+  return (
+    <EditForm
+      submitLabel={t('context.add')}
+      onSubmit={() => create.mutate()}
+      onCancel={onDone}
+    >
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <Field label={t('people.name')}>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </Field>
+        </div>
+        <div className="flex-1">
+          {tab === 'people' ? (
+            <Field label={t('people.handle')}>
+              <Input
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="nickname"
+              />
+            </Field>
+          ) : (
+            <Field label={t('context.typeLabel')}>
+              <Select value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="project">{t('context.type.project')}</option>
+                <option value="habit">{t('context.type.habit')}</option>
+                <option value="event">{t('context.type.event')}</option>
+              </Select>
+            </Field>
+          )}
+        </div>
+      </div>
+      <Field label={t('people.aliases')} hint={t('people.aliasesHint')}>
+        <Input value={aliases} onChange={(e) => setAliases(e.target.value)} />
+      </Field>
+      <Field label={t('people.description')}>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+        />
+      </Field>
+    </EditForm>
   )
 }
 
@@ -338,10 +446,12 @@ function splitAliases(raw: string): string[] {
 function EditForm({
   onSubmit,
   onCancel,
+  submitLabel,
   children,
 }: {
   onSubmit: () => void
   onCancel: () => void
+  submitLabel?: string
   children: ReactNode
 }) {
   const { t } = useTranslation()
@@ -357,7 +467,7 @@ function EditForm({
         {children}
         <div className="flex gap-2">
           <Button type="submit" size="sm">
-            {t('people.save')}
+            {submitLabel ?? t('people.save')}
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
             {t('people.cancel')}

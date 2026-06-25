@@ -60,17 +60,27 @@ export class AnalysisService {
     const state = this.loadState(entry.analysisEnc)
     if (dto.answers?.length) state.answeredQa.push(...dto.answers)
 
-    const body = this.encryption.decrypt(entry.bodyEnc)
-    const [values, coach, metricDefs, context] = await Promise.all([
+    const good = entry.goodEnc ? this.encryption.decrypt(entry.goodEnc) : ''
+    const hard = entry.hardEnc ? this.encryption.decrypt(entry.hardEnc) : ''
+    // Combined text for entity-mention matching (which side it's on doesn't
+    // matter for "who is mentioned today").
+    const fullText = [good, hard].filter(Boolean).join('\n\n')
+    const [values, coach, metricDefs, context, user] = await Promise.all([
       this.prisma.metricValue.findMany({
         where: { userId, occurredOn: entry.occurredOn, source: 'manual' },
       }),
       this.coachPack.getActive(userId),
       this.prisma.metricDefinition.findMany({ where: { userId } }),
-      this.buildContext(userId, entry, body),
+      this.buildContext(userId, entry, fullText),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { isDemo: true },
+      }),
     ])
     const prompt = buildParsePrompt({
-      skills: loadSkills(),
+      // Real (non-demo) users analyse with the local *.local.md methodology
+      // (Eugene's Russian working copy) when present; demo stays on English.
+      skills: loadSkills(!user?.isDemo),
       coach: { analysisMd: coach.analysisMd },
       // Only the metrics the user actively tracks (enabled in settings).
       metricDefs: metricDefs
@@ -83,7 +93,8 @@ export class AnalysisService {
           scaleMax: d.scaleMax,
           source: d.source,
         })),
-      body,
+      good,
+      hard,
       chips: values.map((v) => ({
         key: v.metricKey,
         value: v.value.toNumber(),
@@ -147,7 +158,11 @@ export class AnalysisService {
     return {
       url,
       token,
-      tools: ['mcp__prism__get_entity', 'mcp__prism__find_entries_mentioning'],
+      tools: [
+        'mcp__prism__get_entity',
+        'mcp__prism__find_entries_mentioning',
+        'mcp__prism__update_entity',
+      ],
     }
   }
 
@@ -157,7 +172,7 @@ export class AnalysisService {
   private async buildContext(
     userId: string,
     entry: Entry,
-    body: string,
+    text: string,
   ): Promise<ParseContext> {
     const [entities, cbtCards, recent] = await Promise.all([
       this.prisma.entity.findMany({ where: { userId } }),
@@ -194,7 +209,7 @@ export class AnalysisService {
         type,
       })),
       dossiers: decrypted
-        .filter((e) => e.summary && mentioned(body, [e.name, ...e.aliases]))
+        .filter((e) => e.summary && mentioned(text, [e.name, ...e.aliases]))
         .map((e) => ({ name: e.name, summary: e.summary as string })),
       cbtCards: cbtCards.map((c) => ({
         id: c.id,
@@ -202,10 +217,15 @@ export class AnalysisService {
       })),
       recentDays: recent.map((r) => ({
         date: dayIso(r.occurredOn),
-        // Prefer the AI summary; otherwise the full text — no arbitrary cut.
+        // Prefer the AI summary; otherwise the full text (both sides) — no cut.
         text: r.summaryEnc
           ? this.encryption.decrypt(r.summaryEnc)
-          : this.encryption.decrypt(r.bodyEnc),
+          : [
+              r.goodEnc ? this.encryption.decrypt(r.goodEnc) : '',
+              r.hardEnc ? this.encryption.decrypt(r.hardEnc) : '',
+            ]
+              .filter(Boolean)
+              .join('\n\n'),
       })),
     }
   }

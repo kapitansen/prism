@@ -31,7 +31,10 @@ the contract below.
     text or the pushed context. `find_entries_mentioning(query)` — past entries
     about an entity, to judge patterns over time (e.g. whether "argued with X
     again" tends to be constructive or draining). Don't invent facts about
-    people; pull them.
+    people; pull them. `update_entity(query, digest)` — when the entry holds a
+    durable, worth-remembering fact about an existing entity, refresh its profile:
+    read the current one with `get_entity`, merge in the new fact, and write back
+    the full updated profile. Only for facts that matter later, not day-to-day noise.
 - **intents** — plans/intentions stated for the future ("want to…",
   "tomorrow…", "need to…"). One short line each.
 - **cbtFlags** — if the entry touches one of the user's CBT cards (list given in
