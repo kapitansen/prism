@@ -26,7 +26,14 @@ interface DemoEntry {
   type: EntryType
   occurredOn: Date
   title: string | null
-  body: string
+  good: string
+  hard: string | null
+}
+
+// A day's two sides; `hard` is usually absent (the asymmetry we want to show).
+interface DemoDay {
+  good: string
+  hard?: string
 }
 
 interface DemoPerson {
@@ -37,7 +44,7 @@ interface DemoPerson {
 }
 
 interface DemoContent {
-  bodies: string[]
+  days: DemoDay[]
   reportTitle: string
   noteTitle: string
   people: DemoPerson[]
@@ -53,19 +60,46 @@ interface DemoContent {
 // Demo content per language, so the Journal / People / Cards screens aren't empty.
 const DEMO: Record<Lang, DemoContent> = {
   en: {
-    bodies: [
-      'Morning walk, worked a bit in the afternoon.',
-      'Watched a film, cooked dinner.',
-      'Did some grocery shopping, tidied up at home.',
-      'Read before bed, turned in early.',
-      'Workout and a long walk.',
-      'A calm day, nothing special.',
-      'Studied a new topic, solved some problems.',
-      'Coffee with a friend, strolled downtown.',
-      'Cleared my inbox, replied to messages.',
-      'Listened to music, walked in the park.',
-      'Tried a new dinner recipe.',
-      'A day at home: rest and a series.',
+    days: [
+      {
+        good: 'Long morning walk before work. Finally shipped the report I kept postponing — felt a real weight lift.',
+      },
+      {
+        good: 'Cooked a proper dinner from scratch and it actually turned out great.',
+        hard: 'Doom-scrolled for two hours instead of going to bed. Foggy and irritable by the evening.',
+      },
+      { good: 'Gym session, hit a new personal best on squats.' },
+      {
+        good: 'Coffee with Alex — a good, honest conversation, the kind I leave feeling lighter.',
+        hard: 'Caught myself thinking "I never finish anything" after dropping a side project. Old, familiar thought.',
+      },
+      {
+        good: 'Quiet, restful day. Read two chapters and actually remembered them.',
+      },
+      {
+        good: 'Fixed a bug that had blocked the team for a week. People noticed, and that felt good.',
+      },
+      {
+        good: 'Tried painting for the first time in years — messy, but fun.',
+        hard: 'Snapped at Maria over something trivial. Apologized later, but it sat with me all day.',
+      },
+      { good: 'Cleared the whole inbox and planned the week ahead.' },
+      {
+        good: 'Went to a concert with friends — first proper night out in a while.',
+      },
+      {
+        good: 'An hour on the language course, did every exercise without skipping.',
+        hard: 'Skipped the gym again. Told myself "tomorrow" for the fourth day running.',
+      },
+      {
+        good: 'Helped a neighbor move some furniture. Small thing, felt useful.',
+      },
+      { good: 'Slept nine hours and woke up clear-headed for once.' },
+      {
+        good: 'Cooked for friends; everyone stayed late just talking.',
+        hard: 'Money worries crept back in the evening. Hard to switch the thoughts off.',
+      },
+      { good: 'Took a long bike ride out of the city, no phone.' },
     ],
     reportTitle: 'Weekly summary',
     noteTitle: 'Note',
@@ -111,19 +145,46 @@ const DEMO: Record<Lang, DemoContent> = {
     ],
   },
   ru: {
-    bodies: [
-      'Утром прогулка, днём немного поработал.',
-      'Посмотрел фильм, приготовил ужин.',
-      'Сходил за продуктами, прибрался дома.',
-      'Почитал перед сном, лёг пораньше.',
-      'Тренировка и долгая прогулка.',
-      'Спокойный день без особых событий.',
-      'Поучил новую тему, порешал задачи.',
-      'Кофе с приятелем, прошлись по центру.',
-      'Разобрал почту, ответил на сообщения.',
-      'Слушал музыку, гулял в парке.',
-      'Пробовал новый рецепт на ужин.',
-      'День дома: отдых и сериал.',
+    days: [
+      {
+        good: 'Долгая прогулка с утра. Наконец сдал отчёт, который откладывал неделю, — будто гора с плеч.',
+      },
+      {
+        good: 'Приготовил нормальный ужин с нуля — получилось отлично.',
+        hard: 'Залип в телефоне на два часа вместо сна. К вечеру был как в тумане и раздражённый.',
+      },
+      { good: 'Тренировка, поставил личный рекорд в приседе.' },
+      {
+        good: 'Кофе с Олегом — хороший, честный разговор, после которого легче на душе.',
+        hard: 'Поймал себя на мысли «я ничего не довожу до конца», когда бросил пет-проект. Старая знакомая мысль.',
+      },
+      {
+        good: 'Тихий день отдыха. Прочитал две главы и реально их запомнил.',
+      },
+      {
+        good: 'Починил баг, который неделю блокировал команду. Заметили — и это было приятно.',
+      },
+      {
+        good: 'Впервые за годы попробовал рисовать — коряво, но в кайф.',
+        hard: 'Сорвался на Аню из-за ерунды. Потом извинился, но осадок остался на весь день.',
+      },
+      { good: 'Разобрал всю почту и спланировал неделю.' },
+      {
+        good: 'Сходил с друзьями на концерт — впервые за долгое время нормально выбрался.',
+      },
+      {
+        good: 'Час по языковому курсу, сделал все упражнения, ничего не пропустил.',
+        hard: 'Опять пропустил зал. Четвёртый день подряд говорю себе «завтра».',
+      },
+      {
+        good: 'Помог соседу перенести мебель. Мелочь, а почувствовал себя полезным.',
+      },
+      { good: 'Поспал девять часов и впервые проснулся со свежей головой.' },
+      {
+        good: 'Готовил для друзей; все засиделись допоздна за разговорами.',
+        hard: 'Вечером вернулась тревога из-за денег. Тяжело выключить эти мысли.',
+      },
+      { good: 'Большая велопрогулка за город, без телефона.' },
     ],
     reportTitle: 'Итоги недели',
     noteTitle: 'Заметка',
@@ -172,11 +233,14 @@ function demoEntries(content: DemoContent): DemoEntry[] {
     occurredOn.setDate(occurredOn.getDate() - i)
     const isReport = i % 7 === 6
     const isNote = !isReport && i % 4 === 1
+    const day = content.days[i % content.days.length]
     return {
       type: isReport ? 'report' : isNote ? 'note' : 'daily',
       occurredOn,
       title: isReport ? content.reportTitle : isNote ? content.noteTitle : null,
-      body: content.bodies[i % content.bodies.length],
+      good: day.good,
+      // Notes/reports are single-blob; only daily entries get a "hard" side.
+      hard: !isReport && !isNote ? (day.hard ?? null) : null,
     }
   })
 }
@@ -196,7 +260,7 @@ async function main() {
     })
 
     // Starter metric set + default coach pack (shared with the import script).
-    await ensureBaseline(prisma, user.id)
+    await ensureBaseline(prisma, user.id, encryption)
 
     const content = DEMO[u.lang]
 
@@ -209,7 +273,8 @@ async function main() {
             type: e.type,
             origin: 'web',
             titleEnc: e.title ? encryption.encrypt(e.title) : null,
-            bodyEnc: encryption.encrypt(e.body),
+            goodEnc: encryption.encrypt(e.good),
+            hardEnc: e.hard ? encryption.encrypt(e.hard) : null,
             occurredOn: e.occurredOn,
           },
         })

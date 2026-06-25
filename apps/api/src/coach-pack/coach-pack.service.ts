@@ -2,11 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { CoachPackVersion } from '@prisma/client'
 
 import { PrismaService } from '../prisma/prisma.service'
-import {
-  DEFAULT_ANALYSIS_MD,
-  DEFAULT_SOURCE_NOTE,
-  DEFAULT_VOICE_MD,
-} from './coach-pack.defaults'
+import { COACH_DEFAULTS, resolveLang } from './coach-pack.defaults'
 import { CreateCoachPackVersionDto } from './dto/create-coach-pack-version.dto'
 
 @Injectable()
@@ -70,12 +66,17 @@ export class CoachPackService {
   }
 
   private async createDefault(userId: string) {
+    // Seed the default in the user's UI language.
+    const settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    })
+    const d = COACH_DEFAULTS[resolveLang(settings?.uiLanguage)]
     const version = await this.prisma.coachPackVersion.create({
       data: {
         userId,
-        analysisMd: DEFAULT_ANALYSIS_MD,
-        voiceMd: DEFAULT_VOICE_MD,
-        sourceNote: DEFAULT_SOURCE_NOTE,
+        analysisMd: d.analysisMd,
+        voiceMd: d.voiceMd,
+        sourceNote: d.sourceNote,
       },
     })
     await this.setActive(userId, version.id)
