@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { mentioned } from '../analysis/entity-match'
 import { EncryptionService } from '../crypto/encryption.service'
 import { PrismaService } from '../prisma/prisma.service'
-import { writeEntityUpdateLog } from './entity-update-log'
+import { writeMcpLog } from './mcp-log'
 
 // An entity with its *_enc fields decrypted, for in-memory matching/formatting.
 interface DecryptedEntity {
@@ -29,6 +29,17 @@ export class McpService {
     private readonly encryption: EncryptionService,
   ) {}
 
+  // Audit every MCP tool call (console + git-ignored per-day file under personal/).
+  private logCall(
+    userId: string,
+    tool: string,
+    input: Record<string, unknown>,
+    note?: string,
+  ) {
+    this.logger.log(`mcp ${tool} ${JSON.stringify(input)}`)
+    writeMcpLog({ userId, tool, input, note })
+  }
+
   // A fresh MCP server scoped to one user. Stateless HTTP → one per request, so
   // the user id is baked into every tool and tenant isolation can't leak.
   buildServer(userId: string): McpServer {
@@ -47,6 +58,7 @@ export class McpService {
         },
       },
       async ({ query }: { query: string }) => {
+        this.logCall(userId, 'get_entity', { query })
         const e = this.match(await this.loadEntities(userId), query)
         return {
           content: [
@@ -78,6 +90,7 @@ export class McpService {
         },
       },
       async ({ query, limit }: { query: string; limit?: number }) => {
+        this.logCall(userId, 'find_entries_mentioning', { query, limit })
         const text = await this.findMentions(userId, query, limit ?? 10)
         return { content: [{ type: 'text', text }] }
       },
@@ -108,14 +121,12 @@ export class McpService {
         const e = this.match(await this.loadEntities(userId), query)
         // Audit every attempt — including misses — since the AI writes on its own.
         if (!e) {
-          writeEntityUpdateLog({
+          this.logCall(
             userId,
-            query,
-            matched: null,
-            oldDigest: null,
-            newDigest: digest,
-          })
-          this.logger.warn(`update_entity: no match for "${query}" (no change)`)
+            'update_entity',
+            { query },
+            'NO MATCH (no change)',
+          )
           return { content: [{ type: 'text', text: notFound(query) }] }
         }
         // Scope by userId too (defence in depth — e.id is already the user's).
@@ -126,15 +137,17 @@ export class McpService {
             digestUpdatedAt: new Date(),
           },
         })
-        writeEntityUpdateLog({
+        this.logCall(
           userId,
-          query,
-          matched: { id: e.id, name: e.name },
-          oldDigest: e.digest,
-          newDigest: digest,
-        })
-        this.logger.log(
-          `update_entity: "${e.name}" (${e.id.slice(0, 8)}) profile updated`,
+          'update_entity',
+          { query },
+          [
+            `matched: "${e.name}" (${e.id})`,
+            '--- OLD profile ---',
+            e.digest ?? '(none)',
+            '--- NEW profile ---',
+            digest,
+          ].join('\n'),
         )
         return {
           content: [
@@ -157,6 +170,7 @@ export class McpService {
         },
       },
       async ({ date }: { date: string }) => {
+        this.logCall(userId, 'get_entries_on_date', { date })
         const text = await this.entriesInWindow(userId, date, date, 50)
         return { content: [{ type: 'text', text }] }
       },
@@ -192,6 +206,7 @@ export class McpService {
         to: string
         limit?: number
       }) => {
+        this.logCall(userId, 'get_entries_in_range', { from, to, limit })
         const text = await this.entriesInWindow(userId, from, to, limit ?? 50)
         return { content: [{ type: 'text', text }] }
       },

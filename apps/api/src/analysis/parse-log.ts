@@ -27,6 +27,7 @@ export interface ParseLog {
     outputTokens?: number
     costUsd?: number
     durationMs?: number
+    turns?: number
   }
 }
 
@@ -50,6 +51,7 @@ export function writeParseLog(log: ParseLog): string | null {
       `- model: ${log.model ?? '(cli default)'} | effort: ${log.effort ?? '(cli default)'}`,
       `- outcome: ${log.outcome}`,
       `- tokens: in=${u?.inputTokens ?? '?'} out=${u?.outputTokens ?? '?'}`,
+      `- turns: ${u?.turns ?? '?'} (1 = no tool calls; >1 = used MCP tools)`,
       `- cost: ${u?.costUsd != null ? `$${u.costUsd.toFixed(4)}` : '?'}`,
       `- duration: ${u?.durationMs != null ? `${(u.durationMs / 1000).toFixed(1)}s` : '?'}`,
       '',

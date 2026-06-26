@@ -12,6 +12,7 @@ interface ClaudeEnvelope {
   result?: string
   duration_ms?: number
   total_cost_usd?: number
+  num_turns?: number
   usage?: { input_tokens?: number; output_tokens?: number }
 }
 
@@ -24,10 +25,13 @@ interface ClaudeEnvelope {
 export class ClaudeCodeRunner implements LlmRunner {
   private readonly logger = new Logger(ClaudeCodeRunner.name)
   private readonly bin = process.env.CLAUDE_BIN ?? 'claude'
-  private readonly model = process.env.CLAUDE_MODEL // optional; CLI default if unset
-  // Optional reasoning effort (e.g. low | medium | high) — for tuning analysis
-  // depth vs speed/cost without code changes. CLI default if unset.
-  private readonly effort = process.env.CLAUDE_EFFORT
+  // PRISM-namespaced so they're not shadowed by an ambient CLAUDE_MODEL/
+  // CLAUDE_EFFORT in the surrounding environment (e.g. the Claude Code session
+  // this may run under). CLI default if unset.
+  private readonly model = process.env.PRISM_CLAUDE_MODEL
+  // Optional reasoning effort (e.g. low | medium | high) — tune analysis depth
+  // vs speed/cost without code changes.
+  private readonly effort = process.env.PRISM_CLAUDE_EFFORT
   // Analysis with MCP tool-use is variable (tens of seconds to a few minutes
   // depending on how many entities the model looks up); 180s proved too tight.
   private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 300_000)
@@ -75,6 +79,9 @@ export class ClaudeCodeRunner implements LlmRunner {
         outputTokens: envelope.usage?.output_tokens,
         costUsd: envelope.total_cost_usd,
         durationMs: envelope.duration_ms,
+        turns: envelope.num_turns,
+        model: this.model,
+        effort: this.effort,
       },
     }
   }

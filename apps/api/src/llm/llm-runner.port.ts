@@ -4,6 +4,11 @@ export interface LlmUsage {
   outputTokens?: number
   costUsd?: number
   durationMs?: number
+  // Agentic turns: 1 = no tool calls; >1 = the model used MCP tools mid-run.
+  turns?: number
+  // What the runner actually used (for the log), so it never disagrees with env.
+  model?: string
+  effort?: string
 }
 
 // One LLM call: text out (expected to be JSON per the extraction contract — the
