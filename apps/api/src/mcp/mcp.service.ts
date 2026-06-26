@@ -63,7 +63,8 @@ export class McpService {
         description:
           "Find the user's past journal entries that mention an entity (by " +
           '@handle, name, or alias), most recent first. Returns date + summary ' +
-          '(or a text snippet). Use it to judge patterns over time — e.g. whether ' +
+          '(or the full entry text). Use it to judge patterns over time — e.g. ' +
+          'whether ' +
           'arguments with someone tend to be constructive or draining.',
         inputSchema: {
           query: z.string().describe('A @handle, name, or alias'),
@@ -206,9 +207,11 @@ export class McpService {
       const hard = en.hardEnc ? this.encryption.decrypt(en.hardEnc) : ''
       const body = [good, hard].filter(Boolean).join('\n\n')
       if (!(handleRe?.test(body) || mentioned(body, names))) continue
+      // Prefer the AI summary; otherwise the FULL user text — never truncate, a
+      // cut-off entry would mislead the analysis.
       const snippet = en.summaryEnc
         ? this.encryption.decrypt(en.summaryEnc)
-        : truncate(body, 240)
+        : body
       hits.push(`${isoDay(en.occurredOn)}: ${snippet}`)
       if (hits.length >= limit) break
     }
@@ -253,8 +256,4 @@ function escapeRegex(s: string): string {
 
 function isoDay(d: Date): string {
   return d.toISOString().slice(0, 10)
-}
-
-function truncate(s: string, max: number): string {
-  return s.length > max ? `${s.slice(0, max)}…` : s
 }
