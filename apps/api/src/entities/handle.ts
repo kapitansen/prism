@@ -36,7 +36,7 @@ const TRANSLIT: Record<string, string> = {
 }
 
 // Slugify a name into a base handle: transliterate, keep [a-z0-9_-], cap length.
-// Hyphen and underscore are kept (they're valid in @handles, e.g. @serg-a); only
+// Hyphen and underscore are kept (they're valid in @handles, e.g. @jo-b); only
 // spaces and other punctuation are dropped.
 export function slugifyHandle(name: string): string {
   let out = ''

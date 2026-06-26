@@ -4,12 +4,12 @@ import { slugifyHandle, uniqueHandle } from './handle'
 
 describe('slugifyHandle', () => {
   it('keeps hyphens and underscores (regression: dash was being stripped)', () => {
-    expect(slugifyHandle('serg-a')).toBe('serg-a')
+    expect(slugifyHandle('jo-b')).toBe('jo-b')
     expect(slugifyHandle('john_doe')).toBe('john_doe')
   })
 
   it('lowercases and transliterates Cyrillic', () => {
-    expect(slugifyHandle('Иван')).toBe('ivan')
+    expect(slugifyHandle('Чайка')).toBe('chayka')
     expect(slugifyHandle('Аня')).toBe('anya')
   })
 

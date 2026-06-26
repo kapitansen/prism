@@ -2,7 +2,7 @@
 
 Personal AI-native journal & life-tracker. Its core idea: an **MCP server** that lets any AI agent connect and read meaningful slices of your data — without flooding the agent's context window.
 
-> Work in progress. This repo is the engineering build-out; the MCP layer (the centerpiece) is next.
+> Work in progress, dogfooded daily. The MCP layer (the centerpiece) is now built; next is the read-time companion and charts.
 
 ## The idea
 
@@ -24,13 +24,13 @@ You write free-text journal entries and track a few numeric metrics over time. A
 - **Frontend:** React 19 · Vite · TanStack Query · Tailwind CSS + shadcn/ui.
 - **Auth:** JWT access tokens, argon2 password hashing.
 - **Tests:** Vitest (unit) · Supertest (API).
-- **MCP** _(planned)_: official TypeScript SDK, Streamable HTTP transport, Bearer tokens.
+- **MCP:** official TypeScript SDK, Streamable HTTP transport, per-user Bearer (JWT) tokens.
 - **Tooling:** pnpm workspaces · ESLint + Prettier · Docker Compose.
 
 ## Monorepo layout
 
 ```
-apps/api          — NestJS backend (REST API + AI analysis; MCP server + worker next)
+apps/api          — NestJS backend (REST API + AI analysis + MCP server; worker next)
 apps/web          — React frontend
 packages/shared   — shared types & zod schemas (the extraction-JSON contract)
 ```
@@ -73,6 +73,7 @@ API tests boot the real app and run against a dedicated `prism_test` database �
 ## Status
 
 - ✅ **Backend foundation** — schema, JWT auth + tenant guard, field-level encryption, CRUD for journal entries / entities / numeric metrics, per-account settings.
-- ✅ **Frontend** — login, the day editor (text + metric chips), journal, people, CBT cards, settings.
-- ✅ **AI analysis** — entries are parsed into structure (summary, metrics, entities, intents) by Claude behind an `LlmRunner` port; interactive multi-round clarification; per-user "coach pack" tuning; entity `@handle` tagging.
-- ⏳ **Next** — the MCP server (context-economical data access for AI agents) and the dashboard / charts.
+- ✅ **Frontend** — login, the day editor (two sides — pros / cons — + metric chips), journal, Context (people & topics), CBT cards, settings.
+- ✅ **AI analysis** — entries are parsed into structure (summary, metrics, entities, intents) by Claude behind an `LlmRunner` port; interactive multi-round clarification; suggest-confirm for entities (never silently created); per-user "coach pack" tuning; entity `@handle` tagging.
+- ✅ **MCP server** — per-user, read-mostly tools the analysis (and any external agent) can call: look up an entity profile, find entries mentioning it, fetch entries by date / range, and write back a learned fact to an entity's dossier. Streamable HTTP + Bearer JWT; every call audit-logged.
+- ⏳ **Next** — the read-time companion (a coaching "message of the day") and the dashboard / charts.
