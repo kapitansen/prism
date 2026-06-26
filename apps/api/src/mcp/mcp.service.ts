@@ -1,11 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { Entity } from '@prisma/client'
 import { z } from 'zod'
 
 import { mentioned } from '../analysis/entity-match'
 import { EncryptionService } from '../crypto/encryption.service'
 import { PrismaService } from '../prisma/prisma.service'
+import { writeEntityUpdateLog } from './entity-update-log'
 
 // An entity with its *_enc fields decrypted, for in-memory matching/formatting.
 interface DecryptedEntity {
@@ -21,6 +22,8 @@ interface DecryptedEntity {
 
 @Injectable()
 export class McpService {
+  private readonly logger = new Logger(McpService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
@@ -37,7 +40,7 @@ export class McpService {
         title: 'Get entity profile',
         description:
           'Look up a person/project/habit/event by @handle, name, or alias and ' +
-          'return its profile (name, handle, aliases, description, AI digest). ' +
+          'return its profile (name, handle, aliases, and a short profile note). ' +
           'Use it during analysis to understand who/what a mention refers to.',
         inputSchema: {
           query: z.string().describe('A @handle, name, or alias'),
@@ -102,7 +105,16 @@ export class McpService {
       },
       async ({ query, digest }: { query: string; digest: string }) => {
         const e = this.match(await this.loadEntities(userId), query)
+        // Audit every attempt — including misses — since the AI writes on its own.
         if (!e) {
+          writeEntityUpdateLog({
+            userId,
+            query,
+            matched: null,
+            oldDigest: null,
+            newDigest: digest,
+          })
+          this.logger.warn(`update_entity: no match for "${query}" (no change)`)
           return { content: [{ type: 'text', text: notFound(query) }] }
         }
         // Scope by userId too (defence in depth — e.id is already the user's).
@@ -113,6 +125,16 @@ export class McpService {
             digestUpdatedAt: new Date(),
           },
         })
+        writeEntityUpdateLog({
+          userId,
+          query,
+          matched: { id: e.id, name: e.name },
+          oldDigest: e.digest,
+          newDigest: digest,
+        })
+        this.logger.log(
+          `update_entity: "${e.name}" (${e.id.slice(0, 8)}) profile updated`,
+        )
         return {
           content: [
             { type: 'text', text: `Updated the profile of ${e.name}.` },
@@ -206,14 +228,16 @@ function formatProfile(e: {
   description: string | null
   digest: string | null
 }): string {
+  // Prefer the AI-maintained digest (kept short and current); fall back to the
+  // user's description. Never send both — keep the response compact.
+  const profile = e.digest ?? e.description
   return [
     `name: ${e.name}`,
     e.handle ? `handle: @${e.handle}` : null,
     `type: ${e.type}`,
     `status: ${e.status}`,
     e.aliases.length ? `aliases: ${e.aliases.join(', ')}` : null,
-    e.description ? `description: ${e.description}` : null,
-    e.digest ? `\nprofile:\n${e.digest}` : null,
+    profile ? `\nprofile:\n${profile}` : null,
   ]
     .filter(Boolean)
     .join('\n')
