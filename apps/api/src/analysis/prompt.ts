@@ -24,8 +24,6 @@ export interface ParseContext {
   dossiers: { name: string; summary: string }[]
   // CBT cards (trigger thoughts), so the LLM can raise cbtFlags by id.
   cbtCards: { id: string; title: string }[]
-  // The few preceding days (AI summary, else raw text), for continuity.
-  recentDays: { date: string; text: string }[]
 }
 
 // Assembles the full parse prompt in layers (spec §5.2):
@@ -34,7 +32,8 @@ export interface ParseContext {
 //                     it belongs to the read-time companion, not extraction)
 //   3. data         — the day's text, manual chips, answered clarifications,
 //                     and the catalog of extractable metric keys
-//   4. context      — DB-pushed entities, dossiers, CBT cards, recent days
+//   4. context      — DB-pushed entities, dossiers, CBT cards. Past days are NOT
+//                     pushed — the AI pulls them on demand via the MCP tools.
 export function buildParsePrompt(input: {
   skills: Skills
   coach: { analysisMd: string }
@@ -111,9 +110,6 @@ function buildContextBlock(ctx: ParseContext): string {
   const cards = ctx.cbtCards.length
     ? ctx.cbtCards.map((c) => `- [${c.id}] ${c.title}`).join('\n')
     : '—'
-  const recent = ctx.recentDays.length
-    ? ctx.recentDays.map((r) => fence(`DAY ${r.date}`, r.text)).join('\n\n')
-    : '—'
 
   return [
     `Known people and entities — format "[id] @handle Name (aliases) — type". In the day text, @handle refers to exactly this entity; put its id in existingId.\n${entities}`,
@@ -122,7 +118,8 @@ function buildContextBlock(ctx: ParseContext): string {
     '',
     `CBT cards (for cbtFlags):\n${cards}`,
     '',
-    `Recent entries:\n${recent}`,
+    'Past entries are not included here — pull them yourself when useful via',
+    'get_entries_on_date / get_entries_in_range / find_entries_mentioning.',
   ].join('\n')
 }
 

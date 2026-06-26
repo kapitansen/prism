@@ -168,22 +168,17 @@ export class AnalysisService {
     }
   }
 
-  // Pull grounding context from the DB (spec layer 5): the user's entities (as
-  // candidates for existingId), dossiers of those likely mentioned today, CBT
-  // cards, and the few preceding days. All decrypted in memory.
+  // Pull grounding context from the DB: the user's entities (as candidates for
+  // existingId), dossiers of those likely mentioned today, and CBT cards. Past
+  // days are NOT pushed — the AI pulls them on demand via the MCP tools.
   private async buildContext(
     userId: string,
     entry: Entry,
     text: string,
   ): Promise<ParseContext> {
-    const [entities, cbtCards, recent] = await Promise.all([
+    const [entities, cbtCards] = await Promise.all([
       this.prisma.entity.findMany({ where: { userId } }),
       this.prisma.cbtCard.findMany({ where: { userId } }),
-      this.prisma.entry.findMany({
-        where: { userId, occurredOn: { lt: entry.occurredOn } },
-        orderBy: { occurredOn: 'desc' },
-        take: 5,
-      }),
     ])
 
     const decrypted = entities.map((e) => ({
@@ -216,18 +211,6 @@ export class AnalysisService {
       cbtCards: cbtCards.map((c) => ({
         id: c.id,
         title: this.encryption.decrypt(c.titleEnc),
-      })),
-      recentDays: recent.map((r) => ({
-        date: dayIso(r.occurredOn),
-        // Prefer the AI summary; otherwise the full text (both sides) — no cut.
-        text: r.summaryEnc
-          ? this.encryption.decrypt(r.summaryEnc)
-          : [
-              r.goodEnc ? this.encryption.decrypt(r.goodEnc) : '',
-              r.hardEnc ? this.encryption.decrypt(r.hardEnc) : '',
-            ]
-              .filter(Boolean)
-              .join('\n\n'),
       })),
     }
   }
