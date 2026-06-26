@@ -144,6 +144,59 @@ export class McpService {
       },
     )
 
+    server.registerTool(
+      'get_entries_on_date',
+      {
+        title: 'Get entries on a date',
+        description:
+          "Return the user's journal entries for a specific day (YYYY-MM-DD), " +
+          'including any multi-day entry that spans it. Each entry is its AI ' +
+          'summary, or the full text if it has not been analyzed yet.',
+        inputSchema: {
+          date: z.string().describe('A day, YYYY-MM-DD'),
+        },
+      },
+      async ({ date }: { date: string }) => {
+        const text = await this.entriesInWindow(userId, date, date, 50)
+        return { content: [{ type: 'text', text }] }
+      },
+    )
+
+    server.registerTool(
+      'get_entries_in_range',
+      {
+        title: 'Get entries in a date range',
+        description:
+          "Return the user's journal entries between two dates inclusive " +
+          '(YYYY-MM-DD), oldest first. Each entry is its AI summary, or the full ' +
+          'text if not analyzed yet. Wide ranges are capped by count (the reply ' +
+          'says so) — narrow the range or raise limit; text is never truncated.',
+        inputSchema: {
+          from: z.string().describe('Start day, YYYY-MM-DD'),
+          to: z.string().describe('End day, YYYY-MM-DD'),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(200)
+            .optional()
+            .describe('Max entries (default 50)'),
+        },
+      },
+      async ({
+        from,
+        to,
+        limit,
+      }: {
+        from: string
+        to: string
+        limit?: number
+      }) => {
+        const text = await this.entriesInWindow(userId, from, to, limit ?? 50)
+        return { content: [{ type: 'text', text }] }
+      },
+    )
+
     return server
   }
 
@@ -203,22 +256,82 @@ export class McpService {
 
     const hits: string[] = []
     for (const en of entries) {
-      const good = en.goodEnc ? this.encryption.decrypt(en.goodEnc) : ''
-      const hard = en.hardEnc ? this.encryption.decrypt(en.hardEnc) : ''
-      const body = [good, hard].filter(Boolean).join('\n\n')
+      const body = this.entryFullText(en)
       if (!(handleRe?.test(body) || mentioned(body, names))) continue
-      // Prefer the AI summary; otherwise the FULL user text — never truncate, a
-      // cut-off entry would mislead the analysis.
-      const snippet = en.summaryEnc
-        ? this.encryption.decrypt(en.summaryEnc)
-        : body
-      hits.push(`${isoDay(en.occurredOn)}: ${snippet}`)
+      hits.push(`${isoDay(en.occurredOn)}: ${this.entryDisplay(en)}`)
       if (hits.length >= limit) break
     }
 
     return hits.length
       ? `Entries mentioning ${target.name} (most recent first):\n\n${hits.join('\n\n')}`
       : `No entries mention ${target.name}.`
+  }
+
+  // The full plaintext of an entry: both sides joined. Never truncated.
+  private entryFullText(en: {
+    goodEnc: string | null
+    hardEnc: string | null
+  }): string {
+    return [
+      en.goodEnc ? this.encryption.decrypt(en.goodEnc) : '',
+      en.hardEnc ? this.encryption.decrypt(en.hardEnc) : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+  }
+
+  // What to show for an entry: the AI summary if present, else the full text.
+  private entryDisplay(en: {
+    summaryEnc: string | null
+    goodEnc: string | null
+    hardEnc: string | null
+  }): string {
+    return en.summaryEnc
+      ? this.encryption.decrypt(en.summaryEnc)
+      : this.entryFullText(en)
+  }
+
+  // Entries overlapping [from, to] (inclusive, YYYY-MM-DD), oldest first. Covers
+  // multi-day entries that span the window. Capped by count (reported, never a
+  // text cut) to respect the MCP token budget.
+  private async entriesInWindow(
+    userId: string,
+    from: string,
+    to: string,
+    limit: number,
+  ): Promise<string> {
+    const fromD = new Date(`${from}T00:00:00Z`)
+    const toD = new Date(`${to}T00:00:00Z`)
+    const rows = await this.prisma.entry.findMany({
+      where: {
+        userId,
+        occurredOn: { lte: toD },
+        // entry end (occurredTo, else occurredOn) >= window start
+        OR: [
+          { occurredTo: { gte: fromD } },
+          { occurredTo: null, occurredOn: { gte: fromD } },
+        ],
+      },
+      orderBy: { occurredOn: 'asc' },
+      take: limit + 1, // +1 to detect "there's more" without counting all
+    })
+    const label = from === to ? from : `${from}–${to}`
+    if (!rows.length) return `No entries for ${label}.`
+
+    const more = rows.length > limit
+    const shown = more ? rows.slice(0, limit) : rows
+    const lines = shown.map((en) => {
+      const span =
+        en.occurredTo && isoDay(en.occurredTo) !== isoDay(en.occurredOn)
+          ? `${isoDay(en.occurredOn)}–${isoDay(en.occurredTo)}`
+          : isoDay(en.occurredOn)
+      return `${span} (${en.type}): ${this.entryDisplay(en)}`
+    })
+    let out = `Entries for ${label} (oldest first):\n\n${lines.join('\n\n')}`
+    if (more) {
+      out += `\n\n(showing ${shown.length} of more than ${limit} — narrow the range or raise limit; text is never truncated)`
+    }
+    return out
   }
 }
 

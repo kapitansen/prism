@@ -162,6 +162,8 @@ export class AnalysisService {
         'mcp__prism__get_entity',
         'mcp__prism__find_entries_mentioning',
         'mcp__prism__update_entity',
+        'mcp__prism__get_entries_on_date',
+        'mcp__prism__get_entries_in_range',
       ],
     }
   }
