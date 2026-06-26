@@ -83,6 +83,12 @@ export function DayInputPanel({
   const [rangeTo, setRangeTo] = useState<string | null>(null)
   const [rangeMode, setRangeMode] = useState(false)
   const [calOpen, setCalOpen] = useState(false)
+  // AI-proposed chip values during a parse review (preview overlay, not yet
+  // saved). Cleared on cancel/commit. The chips show these over the stored value.
+  const [previewMetrics, setPreviewMetrics] = useState<Record<
+    string,
+    number
+  > | null>(null)
 
   const isRange = rangeMode && rangeTo !== null && rangeTo !== date
   const days = rangeMode && rangeTo ? daysBetween(date, rangeTo) : [date]
@@ -101,6 +107,7 @@ export function DayInputPanel({
     setDate(iso)
     setRangeTo(null)
     setRangeMode(false)
+    setPreviewMetrics(null) // dropping the day drops any stale parse preview
   }
   const toggleRange = () => {
     if (rangeMode) {
@@ -146,9 +153,11 @@ export function DayInputPanel({
       d.enabled && d.scaleMin !== null && d.scaleMax !== null,
   )
 
-  // A chip shows the manual rating if set, otherwise the AI-extracted value
-  // (both can exist for one key/day).
+  // A chip shows: the AI preview during a parse review (wins, so the user sees
+  // what the parse proposed); otherwise the manual rating; otherwise the stored
+  // AI-extracted value.
   const valueFor = (key: string) => {
+    if (previewMetrics && key in previewMetrics) return previewMetrics[key]
     const forKey = valuesQuery.data?.filter((v) => v.metricKey === key) ?? []
     const manual = forKey.find((v) => v.source === 'manual')
     return (manual ?? forKey[0])?.value ?? null
@@ -238,6 +247,7 @@ export function DayInputPanel({
                   if (!d) return
                   setDate(dateToIso(d))
                   setCalOpen(false)
+                  setPreviewMetrics(null) // new day → drop any stale preview
                 }}
                 autoFocus
               />
@@ -286,7 +296,13 @@ export function DayInputPanel({
             <ChipGroup
               ariaLabel={label(d)}
               value={valueFor(d.key)}
-              onChange={(value) => record.mutate({ metricKey: d.key, value })}
+              onChange={(value) => {
+                record.mutate({ metricKey: d.key, value })
+                // Tapping during a review overrides that chip's preview too.
+                setPreviewMetrics((p) =>
+                  p && d.key in p ? { ...p, [d.key]: value } : p,
+                )
+              }}
               options={Array.from(
                 { length: d.scaleMax - d.scaleMin + 1 },
                 (_, i) => ({
@@ -316,6 +332,8 @@ export function DayInputPanel({
             initialTitle={dayQuery.data?.title ?? ''}
             initialSummary={dayQuery.data?.summary ?? ''}
             initialType={dayQuery.data?.type ?? 'daily'}
+            onPreviewMetrics={setPreviewMetrics}
+            onClose={onClose}
           />
         )}
       </div>
@@ -338,6 +356,8 @@ function DayEditor({
   initialTitle,
   initialSummary,
   initialType,
+  onPreviewMetrics,
+  onClose,
 }: {
   date: string
   to: string | null
@@ -348,6 +368,9 @@ function DayEditor({
   initialTitle: string
   initialSummary: string
   initialType: string
+  // Push AI-proposed chip values up for the live preview (null clears it).
+  onPreviewMetrics: (m: Record<string, number> | null) => void
+  onClose?: () => void
 }) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -488,7 +511,14 @@ function DayEditor({
       if (res.status === 'complete') {
         setSummary(res.summary)
         setEntityChoices({}) // fresh proposal → default every new entity to skip
-      } else setAnswers(res.clarifyQuestions.map(() => ''))
+        // Preview the proposed chip values immediately.
+        onPreviewMetrics(
+          Object.fromEntries(res.metrics.map((m) => [m.key, m.value])),
+        )
+      } else {
+        setAnswers(res.clarifyQuestions.map(() => ''))
+        onPreviewMetrics(null)
+      }
     } finally {
       setBusy(false)
     }
@@ -502,6 +532,13 @@ function DayEditor({
         answer: answers[i] ?? '',
       })),
     )
+  }
+
+  // Discard the review: drop the proposal and the chip preview (chips revert to
+  // their stored manual value, or null).
+  function cancelReview() {
+    setProposal(null)
+    onPreviewMetrics(null)
   }
 
   async function commit() {
@@ -526,12 +563,14 @@ function DayEditor({
       })
       setParsed(true)
       setProposal(null)
-      // Reflect the just-committed analysis without a reload: the AI summary in
-      // the full-edit form, and the extracted metric chips.
       setEditSummary(summary)
+      onPreviewMetrics(null) // committed → drop the preview overlay
       void queryClient.invalidateQueries({ queryKey: ['entries'] })
       void queryClient.invalidateQueries({ queryKey: ['day-entry'] })
       void queryClient.invalidateQueries({ queryKey: ['metric-values'] })
+      // Close the panel after a successful analysis (when embedded as a composer
+      // / inline editor). On the standalone Today page there's no onClose.
+      onClose?.()
     } finally {
       setBusy(false)
     }
@@ -757,7 +796,7 @@ function DayEditor({
               size="sm"
               variant="ghost"
               disabled={busy}
-              onClick={() => setProposal(null)}
+              onClick={cancelReview}
             >
               {t('common.cancel')}
             </Button>
@@ -775,11 +814,7 @@ function DayEditor({
               className={ANALYSIS_FIELD}
             />
           </label>
-          {proposal.metrics.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {proposal.metrics.map((m) => `${m.key}=${m.value}`).join(', ')}
-            </p>
-          )}
+          {/* Proposed metrics are shown live on the chips above (preview). */}
           {proposal.entities.length > 0 && (
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-muted-foreground">
@@ -840,7 +875,7 @@ function DayEditor({
               size="sm"
               variant="ghost"
               disabled={busy}
-              onClick={() => setProposal(null)}
+              onClick={cancelReview}
             >
               {t('common.cancel')}
             </Button>
