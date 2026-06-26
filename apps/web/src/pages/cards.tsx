@@ -104,7 +104,7 @@ function ReviewMode() {
     return <p className="text-sm text-muted-foreground">{t('cards.empty')}</p>
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
       <span className="text-center text-xs text-muted-foreground">
         {`${safeIndex + 1} / ${deck.length}`}
       </span>
@@ -177,7 +177,7 @@ function ReviewCard({
           touchX.current = null
           if (Math.abs(dx) > 50) onSwipe(dx < 0 ? 'left' : 'right')
         }}
-        className="flex min-h-64 w-full flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
+        className="flex min-h-80 w-full flex-col rounded-xl border bg-card p-6 text-left shadow-sm transition active:scale-[0.99]"
       >
         {!revealed ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
@@ -191,7 +191,7 @@ function ReviewCard({
             <p className="text-sm font-medium text-muted-foreground">
               {card.title}
             </p>
-            <p className="max-h-80 overflow-y-auto whitespace-pre-wrap text-sm">
+            <p className="max-h-[34rem] overflow-y-auto whitespace-pre-wrap text-sm">
               {card.explanation}
             </p>
           </div>
