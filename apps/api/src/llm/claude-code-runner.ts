@@ -25,6 +25,9 @@ export class ClaudeCodeRunner implements LlmRunner {
   private readonly logger = new Logger(ClaudeCodeRunner.name)
   private readonly bin = process.env.CLAUDE_BIN ?? 'claude'
   private readonly model = process.env.CLAUDE_MODEL // optional; CLI default if unset
+  // Optional reasoning effort (e.g. low | medium | high) — for tuning analysis
+  // depth vs speed/cost without code changes. CLI default if unset.
+  private readonly effort = process.env.CLAUDE_EFFORT
   // Analysis with MCP tool-use is variable (tens of seconds to a few minutes
   // depending on how many entities the model looks up); 180s proved too tight.
   private readonly timeoutMs = Number(process.env.CLAUDE_TIMEOUT_MS ?? 300_000)
@@ -32,6 +35,7 @@ export class ClaudeCodeRunner implements LlmRunner {
   async run(prompt: string, opts?: LlmRunOptions): Promise<LlmResult> {
     const args = ['-p', '--output-format', 'json']
     if (this.model) args.push('--model', this.model)
+    if (this.effort) args.push('--effort', this.effort)
 
     // Expose our MCP server to the model so it can pull data mid-run. The config
     // is inline JSON; allowedTools whitelists exactly our tools (no prompting in
