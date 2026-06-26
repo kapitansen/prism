@@ -17,6 +17,8 @@ export interface ParseLog {
   occurredOn: string
   round: number
   runner: string
+  model?: string
+  effort?: string
   prompt: string
   raw: string
   outcome: string
@@ -45,6 +47,7 @@ export function writeParseLog(log: ParseLog): string | null {
       `- entry: ${log.entryId} (${log.occurredOn})`,
       `- round: ${log.round}`,
       `- runner: ${log.runner}`,
+      `- model: ${log.model ?? '(cli default)'} | effort: ${log.effort ?? '(cli default)'}`,
       `- outcome: ${log.outcome}`,
       `- tokens: in=${u?.inputTokens ?? '?'} out=${u?.outputTokens ?? '?'}`,
       `- cost: ${u?.costUsd != null ? `$${u.costUsd.toFixed(4)}` : '?'}`,

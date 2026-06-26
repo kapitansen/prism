@@ -113,6 +113,9 @@ export class AnalysisService {
       occurredOn: dayIso(entry.occurredOn),
       round,
       runner,
+      // Stamp the model/effort used, so experiments are comparable in the logs.
+      model: process.env.CLAUDE_MODEL,
+      effort: process.env.CLAUDE_EFFORT,
       prompt,
       raw,
       usage: result.usage,
