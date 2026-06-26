@@ -20,7 +20,7 @@ import { EncryptionService } from '../crypto/encryption.service'
 import { LLM_RUNNER, type LlmRunner } from '../llm/llm-runner.port'
 import { PrismaService } from '../prisma/prisma.service'
 import { ParseDayDto } from './dto/parse-day.dto'
-import { mentioned } from './entity-match'
+import { handleMentioned, mentioned } from './entity-match'
 import { writeParseLog } from './parse-log'
 import { buildParsePrompt, type ParseContext } from './prompt'
 import { loadSkills } from './skills'
@@ -136,7 +136,7 @@ export class AnalysisService {
     this.logger.log(
       `parse round ${round} → ${response.status}` +
         (u
-          ? ` (in=${u.inputTokens} out=${u.outputTokens}, ${u.durationMs != null ? `${(u.durationMs / 1000).toFixed(1)}s` : '?'})`
+          ? ` (in=${u.inputTokens} out=${u.outputTokens}, turns=${u.turns ?? '?'}, ${u.durationMs != null ? `${(u.durationMs / 1000).toFixed(1)}s` : '?'})`
           : '') +
         (file ? ` → ${file}` : ''),
     )
@@ -209,7 +209,13 @@ export class AnalysisService {
         type,
       })),
       dossiers: decrypted
-        .filter((e) => e.summary && mentioned(text, [e.name, ...e.aliases]))
+        .filter(
+          (e) =>
+            e.summary &&
+            // @handle is the exact reference; fall back to a fuzzy name match.
+            (handleMentioned(text, e.handle) ||
+              mentioned(text, [e.name, ...e.aliases])),
+        )
         .map((e) => ({ name: e.name, summary: e.summary as string })),
       cbtCards: cbtCards.map((c) => ({
         id: c.id,

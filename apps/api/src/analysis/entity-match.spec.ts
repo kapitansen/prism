@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { mentioned } from './entity-match'
+import { handleMentioned, mentioned } from './entity-match'
 
 describe('mentioned', () => {
   it('matches an exact name', () => {
@@ -25,6 +25,14 @@ describe('mentioned', () => {
     expect(mentioned('ate a banana', ['Ana'])).toBe(false)
   })
 
+  it('does not match a longer common word sharing a short name stem', () => {
+    // Regression: "Mark" (stem "mar") must not trigger on "marble" — the
+    // Russian case was "Маша" wrongly matching "машине" (the car).
+    expect(mentioned('a shiny marble', ['Mark'])).toBe(false)
+    // ...but a short inflection still matches.
+    expect(mentioned('with Marky', ['Mark'])).toBe(true)
+  })
+
   it('ignores names shorter than 3 chars', () => {
     expect(mentioned('Jo arrived', ['Jo'])).toBe(false)
   })
@@ -35,5 +43,24 @@ describe('mentioned', () => {
 
   it('is case-insensitive', () => {
     expect(mentioned('SAW ALEX', ['alex'])).toBe(true)
+  })
+})
+
+describe('handleMentioned', () => {
+  it('matches an exact @handle reference', () => {
+    expect(handleMentioned('texted @mark today', 'mark')).toBe(true)
+  })
+
+  it('is case-insensitive', () => {
+    expect(handleMentioned('saw @MARK', 'mark')).toBe(true)
+  })
+
+  it('respects a word boundary (no match inside a longer token)', () => {
+    expect(handleMentioned('joined @market_team', 'mark')).toBe(false)
+  })
+
+  it('is false when the handle is absent or null', () => {
+    expect(handleMentioned('a quiet day', 'mark')).toBe(false)
+    expect(handleMentioned('@mark here', null)).toBe(false)
   })
 })

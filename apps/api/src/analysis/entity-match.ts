@@ -11,6 +11,13 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// True if the text contains an exact @handle reference (the authoritative,
+// unambiguous mention — preferred over the fuzzy name match below).
+export function handleMentioned(text: string, handle: string | null): boolean {
+  if (!handle) return false
+  return new RegExp(`@${escapeRegex(handle)}\\b`, 'i').test(text)
+}
+
 // True if any of the given names/aliases plausibly appears in the text.
 export function mentioned(text: string, names: string[]): boolean {
   return names.some((raw) => {
@@ -21,8 +28,9 @@ export function mentioned(text: string, names: string[]): boolean {
     // only, so we use a Unicode lookbehind), then the rest of the word.
     const re = new RegExp(`(?<!\\p{L})${escapeRegex(stem)}\\p{L}*`, 'giu')
     for (const m of text.matchAll(re)) {
-      // Reject far-longer words (stem "sam" must not catch "samurai").
-      if (m[0].length <= name.length + 2) return true
+      // Allow only short inflections (e.g. "Маша" → "Машу/Машей"); reject longer
+      // words that merely share the stem ("машине" the car, "samurai").
+      if (m[0].length <= name.length + 1) return true
     }
     return false
   })
